@@ -220,72 +220,66 @@ function cancelDeleteAdmin() {
 }
 
 .add-btn {
-  background: linear-gradient(90deg, #7c3aed 0%, #4f8cff 100%);
-  color: #fff;
+  background: linear-gradient(135deg, #7D9E87 0%, #6B9AC4 100%);
+  color: #FFFFFF;
   border: none;
-  border-radius: 16px;
-  padding: 10px 36px;
-  font-size: 18px;
-  font-weight: bold;
+  border-radius: 10px;
+  padding: 10px 28px;
+  font-size: 15px;
+  font-weight: 500;
   cursor: pointer;
-  box-shadow: 0 4px 16px 0 #7c3aed22;
-  transition: background 0.25s, transform 0.18s, box-shadow 0.25s;
-  letter-spacing: 1px;
+  box-shadow: 0 2px 8px rgba(107, 154, 196, 0.2);
+  transition: all 0.2s ease;
 }
 
 .add-btn:hover {
-  background: linear-gradient(90deg, #ffb6c1 0%, #4f8cff 100%);
-  color: #222;
-  transform: translateY(-2px) scale(1.04);
-  box-shadow: 0 8px 32px 0 #ffb6c144;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(107, 154, 196, 0.35);
 }
 
 .admin-list {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 32px;
-  margin-bottom: 32px;
+  gap: 16px;
+  margin-bottom: 24px;
 }
 
 .admin-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: linear-gradient(90deg, #f0f5ff 0%, #fff 100%);
-  border-radius: 24px;
-  border: 2.5px solid #e0e7ff;
-  padding: 20px 40px;
-  font-size: 20px;
+  background: #FFFFFF;
+  border-radius: 16px;
+  border: 1px solid #E8E4DE;
+  padding: 20px 28px;
+  font-size: 15px;
   font-weight: 500;
-  box-shadow: 0 4px 24px 0 #4f8cff11, 0 1.5px 6px 0 #ffb6c122;
-  transition: box-shadow 0.25s, transform 0.18s, border 0.25s;
-  position: relative;
-  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(45, 52, 54, 0.04);
+  transition: all 0.2s ease;
 }
 
 .admin-item:hover {
-  box-shadow: 0 8px 32px 0 #4f8cff33, 0 2px 8px 0 #ffb6c133;
-  border: 2.5px solid #7c3aed;
-  transform: translateY(-3px) scale(1.03);
-  z-index: 1;
+  box-shadow: 0 4px 20px rgba(45, 52, 54, 0.08);
+  border-color: #6B9AC4;
+  transform: translateY(-2px);
 }
 
 .admin-info {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
 }
 
 .admin-avatar {
-  width: 56px;
-  height: 56px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   object-fit: cover;
-  box-shadow: 0 2px 12px 0 #4f8cff22;
-  margin-right: 12px;
-  border: 2.5px solid #fff;
-  background: #e0e7ff;
+  box-shadow: 0 2px 8px rgba(45, 52, 54, 0.1);
+  margin-right: 8px;
+  border: 2px solid #FFFFFF;
+  background: #FAF7F2;
 }
 
 .admin-meta {
@@ -295,105 +289,99 @@ function cancelDeleteAdmin() {
 }
 
 .admin-meta .admin-name {
-  font-size: 20px;
-  font-weight: bold;
-  color: #4f8cff;
-  letter-spacing: 1px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #2D3436;
 }
 
 .admin-meta .admin-phone {
-  font-size: 15px;
-  color: #888;
+  font-size: 14px;
+  color: #636E72;
 }
 
 .admin-actions {
   display: flex;
-  gap: 18px;
+  gap: 12px;
 }
 
 .edit-btn, .delete-btn {
-  background: linear-gradient(90deg, #fff 0%, #e0e7ff 100%);
-  border: 2px solid #4f8cff;
-  border-radius: 12px;
-  padding: 8px 28px;
-  font-size: 18px;
-  font-weight: bold;
+  background: #FFFFFF;
+  border: 1px solid #E8E4DE;
+  border-radius: 10px;
+  padding: 8px 20px;
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
-  transition: background 0.22s, color 0.22s, box-shadow 0.22s, transform 0.18s;
-  box-shadow: 0 2px 8px 0 #4f8cff11;
+  transition: all 0.2s ease;
+  color: #636E72;
 }
 
 .edit-btn:hover {
-  background: linear-gradient(90deg, #4f8cff 0%, #7c3aed 100%);
-  color: #fff;
-  transform: scale(1.07);
-  box-shadow: 0 4px 16px 0 #4f8cff33;
+  background: linear-gradient(135deg, #7D9E87 0%, #6B9AC4 100%);
+  color: #FFFFFF;
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(107, 154, 196, 0.25);
 }
 
 .delete-btn {
-  border: 2px solid #ff4f4f;
-  color: #ff4f4f;
+  border-color: #C9735D;
+  color: #C9735D;
 }
 
 .delete-btn:hover {
-  background: linear-gradient(90deg, #ffb6c1 0%, #ff4f4f 100%);
-  color: #fff;
-  transform: scale(1.07);
-  box-shadow: 0 4px 16px 0 #ffb6c144;
+  background: linear-gradient(135deg, #C9735D 0%, #b86350 100%);
+  color: #FFFFFF;
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(201, 115, 93, 0.25);
 }
 
 .admin-pagination {
   display: flex;
   justify-content: flex-end;
-  gap: 24px;
+  gap: 16px;
   margin-top: 16px;
 }
 
 .page-btn.beautify {
-  background: linear-gradient(90deg, #7c3aed 0%, #4f8cff 100%);
-  color: #fff;
+  background: linear-gradient(135deg, #7D9E87 0%, #6B9AC4 100%);
+  color: #FFFFFF;
   border: none;
-  border-radius: 14px;
-  padding: 10px 36px;
-  font-size: 18px;
-  font-weight: bold;
+  border-radius: 10px;
+  padding: 10px 28px;
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
-  box-shadow: 0 4px 16px 0 #7c3aed22;
-  transition: background 0.25s, transform 0.18s, box-shadow 0.25s;
-  letter-spacing: 1px;
-  margin: 0 2px;
+  box-shadow: 0 2px 8px rgba(107, 154, 196, 0.2);
+  transition: all 0.2s ease;
 }
 
 .page-btn.beautify:disabled {
-  background: #e0e7ff;
-  color: #aaa;
+  background: #E8E4DE;
+  color: #9BA4A9;
   cursor: not-allowed;
   box-shadow: none;
 }
 
 .page-btn.beautify:hover:not(:disabled) {
-  background: linear-gradient(90deg, #ffb6c1 0%, #4f8cff 100%);
-  color: #222;
-  transform: translateY(-2px) scale(1.04);
-  box-shadow: 0 8px 32px 0 #ffb6c144;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(107, 154, 196, 0.35);
 }
 
 .admin-type {
-  font-size: 14px;
-  color: #fff;
-  background: #7c3aed;
-  border-radius: 8px;
+  font-size: 12px;
+  color: #FFFFFF;
+  background: linear-gradient(135deg, #7D9E87 0%, #6B9AC4 100%);
+  border-radius: 6px;
   padding: 2px 10px;
   margin-top: 4px;
   display: inline-block;
-  margin-left: 2px;
 }
 
 /* 对话框样式 */
 .admin-dialog-mask {
   position: fixed;
   left: 0; top: 0; right: 0; bottom: 0;
-  background: rgba(79,140,255,0.12);
+  background: rgba(45, 52, 54, 0.15);
   z-index: 1000;
   display: flex;
   align-items: center;
@@ -401,22 +389,22 @@ function cancelDeleteAdmin() {
 }
 
 .admin-dialog {
-  background: #fff;
-  border-radius: 24px;
-  box-shadow: 0 8px 40px 0 #4f8cff33;
-  padding: 36px 48px 28px 48px;
+  background: #FFFFFF;
+  border-radius: 20px;
+  box-shadow: 0 8px 40px rgba(45, 52, 54, 0.15);
+  padding: 32px 40px;
   min-width: 400px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  position: relative;
+  gap: 16px;
 }
 
 .admin-dialog-title {
-  font-size: 22px;
-  font-weight: bold;
-  color: #4f8cff;
+  font-size: 20px;
+  font-weight: 600;
+  color: #2D3436;
   margin-bottom: 8px;
+  text-align: center;
 }
 
 .admin-dialog-row {
@@ -427,58 +415,61 @@ function cancelDeleteAdmin() {
 }
 
 .admin-dialog-row label {
-  width: 100px;
-  color: #7c3aed;
-  font-weight: bold;
+  width: 80px;
+  color: #7D9E87;
+  font-weight: 600;
+  font-size: 14px;
 }
 
 .admin-dialog-row input {
   flex: 1;
-  border: 2px solid #e0e7ff;
-  border-radius: 8px;
-  padding: 6px 12px;
-  font-size: 16px;
-  transition: border-color 0.2s;
+  border: 1px solid #E8E4DE;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 15px;
+  transition: all 0.2s ease;
+  background: #FAF7F2;
 }
 
 .admin-dialog-row input:focus {
-  border-color: #4f8cff;
+  border-color: #6B9AC4;
   outline: none;
+  box-shadow: 0 0 0 3px rgba(107, 154, 196, 0.15);
 }
 
 .admin-dialog-actions {
   display: flex;
-  justify-content: flex-end;
-  gap: 18px;
+  justify-content: center;
+  gap: 16px;
   margin-top: 12px;
 }
 
 .admin-dialog-btn {
-  background: linear-gradient(90deg, #7c3aed 0%, #4f8cff 100%);
-  color: #fff;
+  background: linear-gradient(135deg, #7D9E87 0%, #6B9AC4 100%);
+  color: #FFFFFF;
   border: none;
   border-radius: 10px;
-  padding: 8px 28px;
-  font-size: 16px;
-  font-weight: bold;
+  padding: 10px 28px;
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
-  transition: background 0.22s, color 0.22s, transform 0.18s;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(107, 154, 196, 0.2);
 }
 
 .admin-dialog-btn:hover {
-  background: linear-gradient(90deg, #ffb6c1 0%, #4f8cff 100%);
-  color: #222;
-  transform: scale(1.06);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(107, 154, 196, 0.35);
 }
 
 .admin-dialog-btn.cancel {
-  background: #fff;
-  color: #4f8cff;
-  border: 2px solid #4f8cff;
+  background: #FFFFFF;
+  color: #636E72;
+  border: 1px solid #E8E4DE;
+  box-shadow: none;
 }
 
 .admin-dialog-btn.cancel:hover {
-  background: #f0f5ff;
-  color: #222;
+  background: #FAF7F2;
 }
 </style> 

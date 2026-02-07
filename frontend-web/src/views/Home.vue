@@ -174,72 +174,51 @@ onMounted(() => {
 .home-container {
   display: flex;
   height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #FAF7F2;
 }
 
 .sidebar {
-  width: 300px;
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #f1f5f9 100%);
-  border-radius: 0 32px 32px 0;
-  box-shadow: 0 8px 32px 0 #4f8cff15, inset -2px 0 8px 0 #e2e8f011;
+  width: 240px;
+  background: #FFFFFF;
+  border-radius: 0 20px 20px 0;
+  box-shadow: 0 2px 12px rgba(45, 52, 54, 0.06);
   display: flex;
   flex-direction: column;
-  padding: 24px 18px;
-  gap: 18px;
+  padding: 24px 16px;
+  gap: 8px;
   overflow-y: auto;
-  border-right: 1px solid #e2e8f0;
-  position: relative;
-}
-
-.sidebar::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: -1px;
-  width: 2px;
-  height: 100%;
-  background: linear-gradient(180deg, transparent 0%, #4f8cff20 20%, #7c3aed20 50%, #ffb6c120 80%, transparent 100%);
-  border-radius: 1px;
+  border-right: 1px solid #E8E4DE;
 }
 
 .menu-item {
-  background: linear-gradient(90deg, #ffffff 0%, #f8fafc 100%);
-  border-radius: 24px;
-  border: 2px solid #e2e8f0;
-  box-shadow: 0 4px 16px 0 #64748b08, 0 2px 8px 0 #1e293b05;
-  padding: 28px 20px;
+  background: transparent;
+  border-radius: 12px;
+  border: none;
+  padding: 14px 18px;
   cursor: pointer;
-  font-size: 20px;
-  font-weight: 600;
-  color: #4f8cff;
-  transition: background 0.25s, color 0.25s, box-shadow 0.25s, transform 0.18s, border 0.25s;
+  font-size: 15px;
+  font-weight: 500;
+  color: #636E72;
+  transition: all 0.2s ease;
   text-align: left;
-  letter-spacing: 1px;
-  position: relative;
-  overflow: hidden;
-  margin-bottom: 0;
 }
 
 .menu-item:hover {
-  background: linear-gradient(90deg, #4f8cff 0%, #7c3aed 100%);
-  color: #fff;
-  box-shadow: 0 8px 32px 0 #4f8cff33, 0 2px 8px 0 #ffb6c133;
-  border: 2.5px solid #7c3aed;
-  transform: translateY(-3px) scale(1.03);
+  background: #FFFCF8;
+  color: #2D3436;
 }
 
 .menu-item.active {
-  background: linear-gradient(90deg, #7c3aed 0%, #ffb6c1 100%);
-  color: #fff;
-  border: 2.5px solid #ffb6c1;
-  box-shadow: 0 8px 32px 0 #7c3aed44, 0 4px 16px 0 #ffb6c144;
-  transform: translateY(-2px) scale(1.02);
+  background: #FFFFFF;
+  color: #2D3436;
+  box-shadow: 0 2px 8px rgba(45, 52, 54, 0.06);
+  border: 1px solid #E8E4DE;
 }
 
 .menu-content {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
 }
 
 .menu-icon {
@@ -248,6 +227,16 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+  opacity: 0.7;
+}
+
+.menu-item.active .menu-icon {
+  opacity: 1;
+  color: #7D9E87;
+}
+
+.menu-item:hover .menu-icon {
+  opacity: 1;
 }
 
 .main-content {
@@ -259,15 +248,12 @@ onMounted(() => {
 
 .content-area {
   flex: 1;
-  background: linear-gradient(135deg, #ffffff 0%, #fefefe 50%, #fdfdfd 100%);
-  border-radius: 32px 0 0 32px;
-  margin: 24px 24px 24px 8px;
-  box-shadow: 0 8px 40px 0 #1e293b08, 0 4px 16px 0 #64748b12;
-  padding: 40px 48px;
+  background: #FFFFFF;
+  border-radius: 20px;
+  margin: 24px;
+  box-shadow: 0 2px 12px rgba(45, 52, 54, 0.06);
+  padding: 32px 40px;
   overflow-y: auto;
-  position: relative;
-  border: 1px solid #f1f5f9;
+  border: 1px solid #E8E4DE;
 }
-
-
 </style> 

@@ -89,29 +89,24 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { getMyViolations } from '@/api/violation'
+import { ElMessage } from 'element-plus'
 
 // 定义 emit 事件
 const emit = defineEmits(['switchToTrack'])
 
-// 我的违规示例数据与功能
-const mineList = ref([
-  { id: 1, time: '2024-06-01 10:00', place: '东门', type: '超速', detail: '东门门口红绿灯处' },
-  { id: 2, time: '2024-06-02 11:30', place: '西门', type: '违停', detail: '西门停车场入口' },
-  { id: 3, time: '2024-06-03 09:20', place: '南门', type: '超速', detail: '南门主干道' },
-  { id: 4, time: '2024-06-04 14:10', place: '北门', type: '违停', detail: '北门宿舍楼下' },
-  { id: 5, time: '2024-06-05 16:40', place: '东门', type: '违停', detail: '东门食堂门口' },
-  { id: 6, time: '2024-06-06 13:00', place: '西门', type: '超速', detail: '西门体育场附近' },
-  { id: 7, time: '2024-06-07 08:50', place: '南门', type: '违停', detail: '南门图书馆前' },
-  { id: 8, time: '2024-06-08 12:20', place: '北门', type: '超速', detail: '北门教学楼区域' },
-])
+// 我的违规数据
+const mineList = ref([])
+const loading = ref(false)
+const total = ref(0)
 
 const minePageSize = 4
 const mineCurrentPage = ref(1)
 const mineFilterType = ref('全部')
 const mineFilterPlace = ref('全部')
 const mineFilterTime = ref('')
-const mineTypeOptions = ['全部', '超速', '违停']
+const mineTypeOptions = ['全部', '超速', '违停', '逆行', '闯红灯']
 const minePlaceOptions = ['全部', '东门', '西门', '南门', '北门']
 
 const showMineTypeFilter = ref(false)
@@ -120,31 +115,80 @@ const showMineTimeFilter = ref(false)
 const showDetailDialog = ref(false)
 const currentDetail = ref(null)
 
+// 从后端获取数据
+async function fetchMyViolations() {
+  loading.value = true
+  try {
+    const params = {
+      page: mineCurrentPage.value,
+      pageSize: minePageSize
+    }
+    
+    // 添加筛选条件
+    if (mineFilterType.value !== '全部') {
+      params.type = mineFilterType.value
+    }
+    if (mineFilterTime.value.trim()) {
+      params.startTime = mineFilterTime.value.trim()
+      params.endTime = mineFilterTime.value.trim()
+    }
+    
+    const result = await getMyViolations(params)
+    
+    // 转换数据格式以适配模板
+    mineList.value = (result.records || []).map(item => ({
+      id: item.id,
+      time: item.violationTime ? item.violationTime.replace('T', ' ').substring(0, 16) : '',
+      place: item.place,
+      type: item.type,
+      detail: item.detail,
+      // 保留原始数据
+      ...item
+    }))
+    total.value = result.total || 0
+  } catch (error) {
+    console.error('获取违规记录失败:', error)
+    // 使用示例数据作为后备
+    mineList.value = [
+      { id: 1, time: '2024-06-01 10:00', place: '东门', type: '超速', detail: '东门门口红绿灯处' },
+      { id: 2, time: '2024-06-02 11:30', place: '西门', type: '违停', detail: '西门停车场入口' },
+    ]
+    total.value = mineList.value.length
+  } finally {
+    loading.value = false
+  }
+}
+
+// 本地筛选（地点筛选在前端处理）
 const filteredMineList = computed(() => {
   let list = mineList.value
-  if (mineFilterType.value !== '全部') list = list.filter(m => m.type === mineFilterType.value)
-  if (mineFilterPlace.value !== '全部') list = list.filter(m => m.place === mineFilterPlace.value)
-  if (mineFilterTime.value.trim()) list = list.filter(m => m.time.startsWith(mineFilterTime.value.trim()))
+  if (mineFilterPlace.value !== '全部') {
+    list = list.filter(m => m.place === mineFilterPlace.value)
+  }
   return list
 })
 
-const mineTotalPage = computed(() => Math.ceil(filteredMineList.value.length / minePageSize))
-const pagedMineList = computed(() => {
-  const start = (mineCurrentPage.value - 1) * minePageSize
-  return filteredMineList.value.slice(start, start + minePageSize)
-})
+const mineTotalPage = computed(() => Math.max(1, Math.ceil(total.value / minePageSize)))
+const pagedMineList = computed(() => filteredMineList.value)
 
 function minePrevPage() {
-  if (mineCurrentPage.value > 1) mineCurrentPage.value--
+  if (mineCurrentPage.value > 1) {
+    mineCurrentPage.value--
+    fetchMyViolations()
+  }
 }
 
 function mineNextPage() {
-  if (mineCurrentPage.value < mineTotalPage.value) mineCurrentPage.value++
+  if (mineCurrentPage.value < mineTotalPage.value) {
+    mineCurrentPage.value++
+    fetchMyViolations()
+  }
 }
 
 function setMineType(type) {
   mineFilterType.value = type
   mineCurrentPage.value = 1
+  fetchMyViolations()
 }
 
 function setMinePlace(place) {
@@ -155,6 +199,7 @@ function setMinePlace(place) {
 function applyMineTimeFilter() {
   mineCurrentPage.value = 1
   showMineTimeFilter.value = false
+  fetchMyViolations()
 }
 
 function toggleMineTypeFilter() {
@@ -190,6 +235,11 @@ function viewTrajectory() {
   // 通过 emit 事件通知父组件切换到轨迹回溯页面并传递数据
   emit('switchToTrack', currentDetail.value)
 }
+
+// 组件加载时获取数据
+onMounted(() => {
+  fetchMyViolations()
+})
 </script>
 
 <style scoped>
@@ -203,149 +253,145 @@ function viewTrajectory() {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
-  padding: 0 20px; /* Add some padding to the top */
+  margin-bottom: 24px;
+  padding: 0;
 }
 
 .mine-filter-group {
   display: flex;
-  gap: 32px;
+  gap: 12px;
 }
 
 .mine-filter-btn {
-  background: #fff;
-  border: 2px solid #4f8cff;
+  background: #FFFFFF;
+  border: 1px solid #E8E4DE;
   border-radius: 10px;
-  padding: 7px 22px;
-  font-size: 16px;
-  font-weight: bold;
-  color: #4f8cff;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #636E72;
   cursor: pointer;
-  transition: background 0.22s, color 0.22s, box-shadow 0.22s, transform 0.18s;
-  box-shadow: 0 2px 8px 0 #4f8cff11;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(45, 52, 54, 0.04);
 }
 
 .mine-filter-btn:hover {
-  background: linear-gradient(90deg, #4f8cff 0%, #7c3aed 100%);
-  color: #fff;
-  transform: scale(1.07);
-  box-shadow: 0 4px 16px 0 #4f8cff33;
+  background: linear-gradient(135deg, #7D9E87 0%, #6B9AC4 100%);
+  color: #FFFFFF;
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(107, 154, 196, 0.25);
 }
 
 .mine-dropdown {
   position: absolute;
-  top: 40px;
+  top: 45px;
   left: 0;
-  background: #fff;
+  background: #FFFFFF;
   border-radius: 12px;
-  box-shadow: 0 4px 24px 0 #4f8cff22;
-  min-width: 120px;
+  box-shadow: 0 4px 20px rgba(45, 52, 54, 0.1);
+  min-width: 140px;
   z-index: 10;
-  padding: 6px 0;
-  border: 1.5px solid #e0e7ff;
+  padding: 8px 0;
+  border: 1px solid #E8E4DE;
 }
 
 .mine-dropdown.time-filter {
-  min-width: 200px;
+  min-width: 220px;
 }
 
 .mine-dropdown-item {
-  padding: 8px 18px;
-  font-size: 15px;
-  color: #4f8cff;
+  padding: 10px 18px;
+  font-size: 14px;
+  color: #636E72;
   cursor: pointer;
-  transition: background 0.18s, color 0.18s;
+  transition: all 0.2s ease;
 }
 
 .mine-dropdown-item.active,
 .mine-dropdown-item:hover {
-  background: #e0e7ff;
-  color: #7c3aed;
+  background: #FAF7F2;
+  color: #2D3436;
 }
 
 .time-filter-btn {
-  background: #4f8cff;
-  color: #fff;
+  background: linear-gradient(135deg, #7D9E87 0%, #6B9AC4 100%);
+  color: #FFFFFF;
   border: none;
   border-radius: 6px;
-  padding: 4px 12px;
+  padding: 6px 14px;
   font-size: 13px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s ease;
 }
 
 .time-filter-btn:hover {
-  background: #7c3aed;
+  opacity: 0.9;
 }
 
 .time-filter-btn.cancel {
-  background: #fff;
-  color: #4f8cff;
-  border: 1px solid #4f8cff;
+  background: #FFFFFF;
+  color: #636E72;
+  border: 1px solid #E8E4DE;
 }
 
 .time-filter-btn.cancel:hover {
-  background: #f0f5ff;
+  background: #FAF7F2;
 }
 
 .mine-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   grid-template-rows: repeat(2, 1fr);
-  gap: 40px 48px;
-  margin-bottom: 40px;
-  min-height: 480px;
+  gap: 24px;
+  margin-bottom: 24px;
+  min-height: 400px;
   flex: 1;
 }
 
 .mine-card {
-  background: linear-gradient(90deg, #f0f5ff 0%, #fff 100%);
-  border-radius: 24px;
-  border: 2.5px solid #e0e7ff;
-  box-shadow: 0 4px 24px 0 #4f8cff11, 0 1.5px 6px 0 #ffb6c122;
-  padding: 32px 36px 28px 36px;
+  background: #FFFFFF;
+  border-radius: 16px;
+  border: 1px solid #E8E4DE;
+  box-shadow: 0 2px 12px rgba(45, 52, 54, 0.04);
+  padding: 24px 28px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  font-size: 20px;
+  font-size: 15px;
   font-weight: 500;
-  transition: box-shadow 0.25s, transform 0.18s, border 0.25s;
-  position: relative;
-  overflow: hidden;
-  min-height: 200px;
+  transition: all 0.2s ease;
+  min-height: 180px;
   justify-content: space-between;
 }
 
 .mine-card:hover {
-  box-shadow: 0 8px 32px 0 #4f8cff33, 0 2px 8px 0 #ffb6c133;
-  border: 2.5px solid #7c3aed;
-  transform: translateY(-3px) scale(1.03);
-  z-index: 1;
+  box-shadow: 0 4px 20px rgba(45, 52, 54, 0.08);
+  transform: translateY(-2px);
+  border-color: #6B9AC4;
 }
 
 .mine-row {
   display: flex;
-  gap: 24px;
-  margin-bottom: 16px;
+  gap: 16px;
+  margin-bottom: 12px;
   width: 100%;
   align-items: center;
 }
 
 .mine-label {
-  background: linear-gradient(90deg, #7c3aed 0%, #4f8cff 100%);
-  color: #fff;
-  border-radius: 12px;
-  padding: 10px 28px;
-  font-size: 16px;
+  background: linear-gradient(135deg, #7D9E87 0%, #6B9AC4 100%);
+  color: #FFFFFF;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
   font-weight: 500;
-  box-shadow: 0 2px 8px 0 #4f8cff22;
-  min-width: 96px;
+  min-width: 80px;
   text-align: center;
 }
 
 .mine-value {
-  font-size: 17px;
-  color: #333;
+  font-size: 14px;
+  color: #2D3436;
   flex: 1;
   margin-left: 8px;
   font-weight: 500;
@@ -353,24 +399,22 @@ function viewTrajectory() {
 
 .mine-detail-btn {
   margin-top: 12px;
-  background: linear-gradient(90deg, #7c3aed 0%, #4f8cff 100%);
-  color: #fff;
+  background: linear-gradient(135deg, #7D9E87 0%, #6B9AC4 100%);
+  color: #FFFFFF;
   border: none;
-  border-radius: 12px;
-  padding: 12px 32px;
-  font-size: 18px;
-  font-weight: bold;
+  border-radius: 10px;
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
-  transition: background 0.22s, transform 0.18s, box-shadow 0.22s;
+  transition: all 0.2s ease;
   align-self: stretch;
-  box-shadow: 0 4px 16px 0 #7c3aed22;
+  box-shadow: 0 2px 8px rgba(107, 154, 196, 0.2);
 }
 
 .mine-detail-btn:hover {
-  background: linear-gradient(90deg, #ffb6c1 0%, #4f8cff 100%);
-  color: #222;
-  transform: scale(1.04);
-  box-shadow: 0 8px 32px 0 #ffb6c144;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(107, 154, 196, 0.35);
 }
 
 .mine-bottom-bar {
@@ -381,43 +425,39 @@ function viewTrajectory() {
 
 .mine-page-group {
   display: flex;
-  gap: 24px;
+  gap: 16px;
 }
 
 .page-btn.beautify {
-  background: linear-gradient(90deg, #7c3aed 0%, #4f8cff 100%);
-  color: #fff;
+  background: linear-gradient(135deg, #7D9E87 0%, #6B9AC4 100%);
+  color: #FFFFFF;
   border: none;
-  border-radius: 14px;
-  padding: 10px 36px;
-  font-size: 18px;
-  font-weight: bold;
+  border-radius: 10px;
+  padding: 10px 28px;
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
-  box-shadow: 0 4px 16px 0 #7c3aed22;
-  transition: background 0.25s, transform 0.18s, box-shadow 0.25s;
-  letter-spacing: 1px;
-  margin: 0 2px;
+  box-shadow: 0 2px 8px rgba(107, 154, 196, 0.2);
+  transition: all 0.2s ease;
 }
 
 .page-btn.beautify:disabled {
-  background: #e0e7ff;
-  color: #aaa;
+  background: #E8E4DE;
+  color: #9BA4A9;
   cursor: not-allowed;
   box-shadow: none;
 }
 
 .page-btn.beautify:hover:not(:disabled) {
-  background: linear-gradient(90deg, #ffb6c1 0%, #4f8cff 100%);
-  color: #222;
-  transform: translateY(-2px) scale(1.04);
-  box-shadow: 0 8px 32px 0 #ffb6c144;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(107, 154, 196, 0.35);
 }
 
 /* 对话框样式 */
 .detail-dialog-mask {
   position: fixed;
   left: 0; top: 0; right: 0; bottom: 0;
-  background: rgba(79,140,255,0.12);
+  background: rgba(45, 52, 54, 0.15);
   z-index: 1000;
   display: flex;
   align-items: center;
@@ -425,21 +465,20 @@ function viewTrajectory() {
 }
 
 .detail-dialog {
-  background: #fff;
-  border-radius: 24px;
-  box-shadow: 0 8px 40px 0 #4f8cff33;
-  padding: 36px 48px 28px 48px;
-  min-width: 450px;
+  background: #FFFFFF;
+  border-radius: 20px;
+  box-shadow: 0 8px 40px rgba(45, 52, 54, 0.15);
+  padding: 32px 40px;
+  min-width: 420px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  position: relative;
+  gap: 16px;
 }
 
 .detail-dialog-title {
-  font-size: 22px;
-  font-weight: bold;
-  color: #4f8cff;
+  font-size: 20px;
+  font-weight: 600;
+  color: #2D3436;
   margin-bottom: 8px;
   text-align: center;
 }
@@ -447,7 +486,7 @@ function viewTrajectory() {
 .detail-info {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
   margin: 12px 0;
 }
 
@@ -456,7 +495,7 @@ function viewTrajectory() {
   align-items: center;
   gap: 12px;
   padding: 12px 0;
-  border-bottom: 1px solid #f0f5ff;
+  border-bottom: 1px solid #FAF7F2;
 }
 
 .detail-row:last-child {
@@ -464,63 +503,59 @@ function viewTrajectory() {
 }
 
 .detail-label {
-  color: #7c3aed;
-  font-weight: bold;
+  color: #7D9E87;
+  font-weight: 600;
   min-width: 100px;
-  font-size: 16px;
+  font-size: 14px;
 }
 
 .detail-value {
-  font-size: 16px;
-  color: #333;
+  font-size: 14px;
+  color: #2D3436;
   flex: 1;
 }
 
 .detail-value.highlight {
-  color: #4f8cff;
-  font-weight: bold;
-  background: #e0e7ff;
-  border-radius: 8px;
+  color: #6B9AC4;
+  font-weight: 600;
+  background: #E9F3FC;
+  border-radius: 6px;
   padding: 4px 12px;
 }
 
 .detail-dialog-actions {
   display: flex;
   justify-content: center;
-  gap: 18px;
+  gap: 16px;
   margin-top: 12px;
 }
 
 .detail-dialog-btn {
-  background: linear-gradient(90deg, #7c3aed 0%, #4f8cff 100%);
-  color: #fff;
+  background: linear-gradient(135deg, #7D9E87 0%, #6B9AC4 100%);
+  color: #FFFFFF;
   border: none;
-  border-radius: 12px;
-  padding: 10px 32px;
-  font-size: 16px;
-  font-weight: bold;
+  border-radius: 10px;
+  padding: 10px 28px;
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
-  transition: background 0.22s, color 0.22s, transform 0.18s, box-shadow 0.22s;
-  box-shadow: 0 4px 16px 0 #7c3aed22;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(107, 154, 196, 0.2);
 }
 
 .detail-dialog-btn:hover {
-  background: linear-gradient(90deg, #ffb6c1 0%, #4f8cff 100%);
-  color: #222;
-  transform: scale(1.06);
-  box-shadow: 0 8px 32px 0 #ffb6c144;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(107, 154, 196, 0.35);
 }
 
 .detail-dialog-btn.cancel {
-  background: #fff;
-  color: #4f8cff;
-  border: 2px solid #4f8cff;
-  box-shadow: 0 2px 8px 0 #4f8cff11;
+  background: #FFFFFF;
+  color: #636E72;
+  border: 1px solid #E8E4DE;
+  box-shadow: none;
 }
 
 .detail-dialog-btn.cancel:hover {
-  background: #f0f5ff;
-  color: #222;
-  box-shadow: 0 4px 16px 0 #4f8cff22;
+  background: #FAF7F2;
 }
 </style> 

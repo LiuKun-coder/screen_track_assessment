@@ -123,12 +123,12 @@ function goToLogin() {
 <style lang="scss" scoped>
 .profile-page {
   min-height: 100vh;
-  background: #F5F5F5;
+  background: #FAF7F2;
   padding-bottom: calc(120rpx + env(safe-area-inset-bottom));
 }
 
 .user-card {
-  background: linear-gradient(135deg, #007AFF 0%, #5AC8FA 100%);
+  background: linear-gradient(135deg, #7D9E87 0%, #6B9AC4 100%);
   padding: 60rpx 32rpx;
   margin-bottom: 24rpx;
 }
@@ -142,7 +142,7 @@ function goToLogin() {
   width: 120rpx;
   height: 120rpx;
   border-radius: 50%;
-  border: 4rpx solid rgba(255, 255, 255, 0.5);
+  border: 4rpx solid rgba(255, 255, 255, 0.4);
   margin-right: 24rpx;
 }
 
@@ -160,26 +160,27 @@ function goToLogin() {
 
 .phone {
   font-size: 26rpx;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .edit-icon {
   font-size: 40rpx;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .menu-section {
   background: #FFFFFF;
   margin: 0 32rpx 24rpx;
-  border-radius: 16rpx;
+  border-radius: 24rpx;
   overflow: hidden;
+  box-shadow: 0 4rpx 16rpx rgba(45, 52, 54, 0.06);
 }
 
 .menu-item {
   display: flex;
   align-items: center;
   padding: 32rpx;
-  border-bottom: 1rpx solid #F0F0F0;
+  border-bottom: 1rpx solid #E8E4DE;
   
   &:last-child {
     border-bottom: none;
@@ -194,12 +195,12 @@ function goToLogin() {
 .menu-text {
   flex: 1;
   font-size: 30rpx;
-  color: #333333;
+  color: #2D3436;
 }
 
 .menu-arrow {
   font-size: 36rpx;
-  color: #CCCCCC;
+  color: #9BA4A9;
 }
 
 .logout-section {
@@ -210,9 +211,9 @@ function goToLogin() {
   width: 100%;
   height: 88rpx;
   background: #FFFFFF;
-  border: 2rpx solid #FF3B30;
-  border-radius: 12rpx;
-  color: #FF3B30;
+  border: 2rpx solid #C9735D;
+  border-radius: 20rpx;
+  color: #C9735D;
   font-size: 32rpx;
 }
 
@@ -223,8 +224,8 @@ function goToLogin() {
 .login-btn {
   width: 100%;
   height: 88rpx;
-  background: linear-gradient(135deg, #007AFF 0%, #5AC8FA 100%);
-  border-radius: 12rpx;
+  background: linear-gradient(135deg, #7D9E87 0%, #6B9AC4 100%);
+  border-radius: 20rpx;
   color: #FFFFFF;
   font-size: 32rpx;
   border: none;

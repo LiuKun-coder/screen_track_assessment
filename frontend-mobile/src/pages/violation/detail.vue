@@ -150,14 +150,15 @@ onMounted(() => {
 <style lang="scss" scoped>
 .detail-page {
   min-height: 100vh;
-  background: #F5F5F5;
+  background: #FAF7F2;
   padding: 24rpx 32rpx;
 }
 
 .detail-card {
   background: #FFFFFF;
-  border-radius: 20rpx;
+  border-radius: 24rpx;
   overflow: hidden;
+  box-shadow: 0 4rpx 16rpx rgba(45, 52, 54, 0.06);
 }
 
 .status-bar {
@@ -165,11 +166,11 @@ onMounted(() => {
   text-align: center;
   
   &.status-pending {
-    background: linear-gradient(135deg, #FF9500 0%, #FFCC00 100%);
+    background: linear-gradient(135deg, #D4A574 0%, #E9C89B 100%);
   }
   
   &.status-processed {
-    background: linear-gradient(135deg, #4CD964 0%, #5AC8FA 100%);
+    background: linear-gradient(135deg, #7D9E87 0%, #6B9AC4 100%);
   }
 }
 
@@ -189,18 +190,18 @@ onMounted(() => {
   align-items: center;
   margin-bottom: 32rpx;
   padding-bottom: 24rpx;
-  border-bottom: 1rpx solid #F0F0F0;
+  border-bottom: 1rpx solid #E8E4DE;
 }
 
 .violation-type {
   font-size: 36rpx;
   font-weight: 600;
-  color: #333333;
+  color: #2D3436;
 }
 
 .violation-time {
   font-size: 26rpx;
-  color: #999999;
+  color: #9BA4A9;
 }
 
 .info-row {
@@ -211,14 +212,14 @@ onMounted(() => {
 .info-label {
   width: 160rpx;
   font-size: 28rpx;
-  color: #999999;
+  color: #9BA4A9;
   flex-shrink: 0;
 }
 
 .info-value {
   flex: 1;
   font-size: 28rpx;
-  color: #333333;
+  color: #2D3436;
 }
 
 .image-section {
@@ -228,7 +229,7 @@ onMounted(() => {
 .section-title {
   font-size: 28rpx;
   font-weight: 500;
-  color: #333333;
+  color: #2D3436;
   margin-bottom: 20rpx;
   display: block;
 }
@@ -242,31 +243,31 @@ onMounted(() => {
 .evidence-image {
   width: 200rpx;
   height: 200rpx;
-  border-radius: 12rpx;
+  border-radius: 16rpx;
 }
 
 .action-section {
   padding: 32rpx;
-  border-top: 1rpx solid #F0F0F0;
+  border-top: 1rpx solid #E8E4DE;
 }
 
 .btn {
   width: 100%;
   height: 88rpx;
-  border-radius: 12rpx;
+  border-radius: 20rpx;
   font-size: 32rpx;
   font-weight: 500;
   border: none;
   
   &.btn-primary {
-    background: linear-gradient(135deg, #0066FF 0%, #0099FF 100%);
+    background: linear-gradient(135deg, #7D9E87 0%, #6B9AC4 100%);
     color: #FFFFFF;
   }
   
   &.btn-outline {
     background: #FFFFFF;
-    color: #0066FF;
-    border: 2rpx solid #0066FF;
+    color: #7D9E87;
+    border: 2rpx solid #7D9E87;
   }
 }
 
@@ -274,6 +275,6 @@ onMounted(() => {
   padding: 100rpx;
   text-align: center;
   font-size: 28rpx;
-  color: #999999;
+  color: #9BA4A9;
 }
 </style>

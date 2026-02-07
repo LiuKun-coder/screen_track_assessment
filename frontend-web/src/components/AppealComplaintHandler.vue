@@ -410,6 +410,8 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { getAppealList, handleAppeal, getAppealDetail } from '@/api/appeal'
+import { ElMessage } from 'element-plus'
 
 // 响应式数据
 const currentFilter = ref('all')
@@ -424,6 +426,8 @@ const currentItem = ref(null)
 const processResult = ref('')
 const processNote = ref('')
 const followUpMeasures = ref([])
+const loading = ref(false)
+const total = ref(0)
 
 // 筛选选项
 const filterTabs = [
@@ -434,163 +438,124 @@ const filterTabs = [
   { key: 'appeal', label: '申诉' }
 ]
 
-// 模拟数据
-const allItems = ref([
-  {
-    id: 1,
-    type: 'appeal',
-    number: 'AP20240601001',
-    title: '对超速违规处理结果的申诉',
-    submitter: '张三',
-    contact: '138****5678',
-    submitTime: '2024-06-01 10:30',
-    deadline: '2024-06-04 17:00',
-    status: 'pending',
-    priority: 'high',
-    description: '认为超速检测设备存在故障，申请重新核实处理结果...',
-    fullDescription: '我于2024年5月30日在东门附近被检测为超速违规，但我认为当时的检测设备可能存在故障。根据我的行车记录，当时车速并未超过限速标准。希望能够重新核实相关证据，并重新评估处理结果。',
-    evidence: [
-      { name: '行车记录视频.mp4', size: '25MB' },
-      { name: 'GPS轨迹截图.jpg', size: '2MB' }
-    ],
-    processHistory: [
+// 申诉列表数据
+const allItems = ref([])
+
+// 从后端获取申诉列表
+async function fetchAppealList() {
+  loading.value = true
+  try {
+    const params = {
+      page: currentPage.value,
+      pageSize: pageSize
+    }
+    
+    // 根据筛选条件添加status参数
+    if (['pending', 'processing', 'completed'].includes(currentFilter.value)) {
+      // 将状态映射到后端格式
+      const statusMap = {
+        'pending': 'pending',
+        'processing': 'pending', // 后端可能没有processing，暂时归为pending
+        'completed': 'completed'
+      }
+      // 后端状态：pending, approved, rejected
+      if (currentFilter.value === 'completed') {
+        // completed 不传status，或者传 approved/rejected
+      } else if (currentFilter.value === 'pending') {
+        params.status = 'pending'
+      }
+    }
+    
+    const result = await getAppealList(params)
+    
+    // 转换数据格式以适配模板
+    allItems.value = (result.records || []).map(item => {
+      // 解析JSON字段
+      let evidenceFiles = []
+      try {
+        evidenceFiles = item.evidenceFiles ? JSON.parse(item.evidenceFiles) : []
+      } catch (e) {
+        evidenceFiles = []
+      }
+      
+      // 根据后端状态映射到前端状态
+      let frontStatus = 'pending'
+      if (item.status === 'pending') {
+        frontStatus = 'pending'
+      } else if (item.status === 'approved' || item.status === 'rejected') {
+        frontStatus = 'completed'
+      }
+      
+      return {
+        id: item.id,
+        type: 'appeal',
+        number: item.appealNumber || `AP${item.id}`,
+        title: `申诉违规记录 #${item.violationId}`,
+        submitter: `用户${item.userId}`,
+        contact: item.contactPhone || '***',
+        submitTime: item.createTime ? item.createTime.replace('T', ' ').substring(0, 16) : '',
+        deadline: getDeadline(item.createTime),
+        status: frontStatus,
+        priority: 'medium',
+        description: item.description ? item.description.substring(0, 50) + '...' : '',
+        fullDescription: item.description || '',
+        reason: item.reason,
+        evidence: evidenceFiles.map((url, idx) => ({ name: `证据${idx + 1}`, url })),
+        replyContent: item.replyContent,
+        handleTime: item.handleTime,
+        processHistory: buildProcessHistory(item),
+        // 保留原始数据
+        ...item
+      }
+    })
+    total.value = result.total || 0
+  } catch (error) {
+    console.error('获取申诉列表失败:', error)
+    // 使用示例数据作为后备
+    allItems.value = [
       {
-        time: '2024-06-01 10:30',
-        action: '申诉提交',
-        operator: '系统',
-        note: '用户提交申诉申请'
+        id: 1, type: 'appeal', number: 'AP20240601001', title: '对超速违规处理结果的申诉',
+        submitter: '张三', contact: '138****5678', submitTime: '2024-06-01 10:30',
+        deadline: '2024-06-04 17:00', status: 'pending', priority: 'high',
+        description: '认为超速检测设备存在故障...', fullDescription: '详细描述...',
+        evidence: [], processHistory: []
       }
     ]
-  },
-  {
-    id: 3,
-    type: 'appeal',
-    number: 'AP20240602001',
-    title: '申诉违停处理结果',
-    submitter: '王五',
-    contact: '137****9876',
-    submitTime: '2024-06-02 09:15',
-    deadline: '2024-06-05 17:00',
-    status: 'completed',
-    priority: 'low',
-    description: '因紧急情况临时停车，申请撤销违停处理...',
-    fullDescription: '我于2024年5月31日因家人突发疾病需要紧急送医，在南门附近临时停车约10分钟。由于情况紧急，未能及时寻找合适的停车位。希望能够考虑特殊情况，撤销相关处理决定。',
-    evidence: [
-      { name: '医院急诊记录.pdf', size: '1.2MB' },
-      { name: '紧急情况说明.docx', size: '500KB' }
-    ],
-    processHistory: [
-      {
-        time: '2024-06-02 09:15',
-        action: '申诉提交',
-        operator: '系统',
-        note: '用户提交申诉申请'
-      },
-      {
-        time: '2024-06-02 11:30',
-        action: '开始处理',
-        operator: '管理员张三',
-        note: '开始审核申诉材料'
-      },
-      {
-        time: '2024-06-02 15:45',
-        action: '处理完成',
-        operator: '管理员张三',
-        note: '经核实，确属紧急情况，申诉成立，撤销原处理决定'
-      }
-    ]
-  },
-  {
-    id: 5,
-    type: 'appeal',
-    number: 'AP20240603001',
-    title: '申诉身份识别错误',
-    submitter: '孙七',
-    contact: '135****8765',
-    submitTime: '2024-06-03 11:45',
-    deadline: '2024-06-06 17:00',
-    status: 'processing',
-    priority: 'high',
-    description: '系统错误识别违规人员身份，申请更正...',
-    fullDescription: '我收到一份违规通知，但经过核实，当时我并不在现场。可能是系统在识别过程中出现了错误，将其他人的违规行为误认为是我的。希望能够重新核实相关证据。',
-    evidence: [
-      { name: '不在场证明.pdf', size: '800KB' },
-      { name: '监控截图对比.jpg', size: '3.5MB' }
-    ],
-    processHistory: [
-      {
-        time: '2024-06-03 11:45',
-        action: '申诉提交',
-        operator: '系统',
-        note: '用户提交申诉申请'
-      },
-      {
-        time: '2024-06-03 14:20',
-        action: '开始处理',
-        operator: '管理员李四',
-        note: '开始核实身份识别情况'
-      }
-    ]
-  },
-  {
-    id: 7,
-    type: 'appeal',
-    number: 'AP20240604001',
-    title: '申诉设备故障误判',
-    submitter: '李明',
-    contact: '139****2468',
-    submitTime: '2024-06-04 14:20',
-    deadline: '2024-06-07 17:00',
-    status: 'pending',
-    priority: 'medium',
-    description: '认为监控设备故障导致误判，申请重新审核...',
-    fullDescription: '我于2024年6月3日收到违规通知，但当时我严格按照规定行驶，没有任何违规行为。怀疑是监控设备出现故障导致的误判，希望能够重新审核相关证据。',
-    evidence: [
-      { name: '当时现场照片.jpg', size: '3.2MB' },
-      { name: '行驶路线说明.pdf', size: '1.5MB' }
-    ],
-    processHistory: [
-      {
-        time: '2024-06-04 14:20',
-        action: '申诉提交',
-        operator: '系统',
-        note: '用户提交申诉申请'
-      }
-    ]
-  },
-  {
-    id: 8,
-    type: 'appeal',
-    number: 'AP20240605001',
-    title: '申诉处理程序不当',
-    submitter: '陈华',
-    contact: '138****1357',
-    submitTime: '2024-06-05 16:30',
-    deadline: '2024-06-08 17:00',
-    status: 'processing',
-    priority: 'low',
-    description: '认为处理程序不符合规定，申请重新处理...',
-    fullDescription: '我对之前的违规处理程序有异议，认为相关部门在处理过程中没有按照规定程序进行，希望能够重新按照正确程序处理此事。',
-    evidence: [
-      { name: '处理程序说明.docx', size: '800KB' },
-      { name: '相关规定截图.jpg', size: '2.1MB' }
-    ],
-    processHistory: [
-      {
-        time: '2024-06-05 16:30',
-        action: '申诉提交',
-        operator: '系统',
-        note: '用户提交申诉申请'
-      },
-      {
-        time: '2024-06-05 17:45',
-        action: '开始处理',
-        operator: '管理员赵六',
-        note: '开始审核处理程序'
-      }
-    ]
+    total.value = allItems.value.length
+  } finally {
+    loading.value = false
   }
-])
+}
+
+// 构建处理历史
+function buildProcessHistory(item) {
+  const history = []
+  if (item.createTime) {
+    history.push({
+      time: item.createTime.replace('T', ' ').substring(0, 16),
+      action: '申诉提交',
+      operator: '系统',
+      note: '用户提交申诉申请'
+    })
+  }
+  if (item.handleTime && item.status !== 'pending') {
+    history.push({
+      time: item.handleTime.replace('T', ' ').substring(0, 16),
+      action: '处理完成',
+      operator: '管理员',
+      note: item.replyContent || '已处理'
+    })
+  }
+  return history
+}
+
+// 计算处理期限（提交后3天）
+function getDeadline(createTime) {
+  if (!createTime) return ''
+  const date = new Date(createTime)
+  date.setDate(date.getDate() + 3)
+  return date.toISOString().replace('T', ' ').substring(0, 16)
+}
 
 // 计算属性
 const filteredItems = computed(() => {
@@ -624,13 +589,10 @@ const filteredItems = computed(() => {
   return items
 })
 
-const paginatedItems = computed(() => {
-  const start = (currentPage.value - 1) * pageSize
-  return filteredItems.value.slice(start, start + pageSize)
-})
+const paginatedItems = computed(() => filteredItems.value)
 
 const totalPages = computed(() => {
-  return Math.ceil(filteredItems.value.length / pageSize)
+  return Math.max(1, Math.ceil(total.value / pageSize))
 })
 
 // 统计数据
@@ -646,13 +608,14 @@ const completedCount = computed(() =>
   allItems.value.filter(item => item.status === 'completed').length
 )
 
-const totalCount = computed(() => allItems.value.length)
+const totalCount = computed(() => total.value)
 
 // 方法
 function setFilter(key) {
   currentFilter.value = key
   currentPage.value = 1
   selectedItems.value = []
+  fetchAppealList()
 }
 
 function handleSearch() {
@@ -733,68 +696,58 @@ function closeProcessDialog() {
   followUpMeasures.value = []
 }
 
-function submitProcess() {
-  // 更新项目状态
-  const item = allItems.value.find(i => i.id === currentItem.value.id)
-  if (item) {
-    item.status = 'completed'
+// 提交处理结果到后端
+async function submitProcess() {
+  if (!currentItem.value) return
+  
+  try {
+    // 将处理结果映射到后端格式
+    const statusMap = {
+      'approved': 'approved',
+      'rejected': 'rejected',
+      'partial': 'approved' // 部分成立按成立处理
+    }
     
-    // 添加处理历史
-    const now = new Date()
-    const timeStr = now.toLocaleString('zh-CN')
-    item.processHistory.push({
-      time: timeStr,
-      action: '处理完成',
-      operator: '当前管理员',
-      note: `处理结果：${processResult.value === 'approved' ? '成立' : processResult.value === 'rejected' ? '不成立' : '部分成立'}。${processNote.value}`
+    const resultText = processResult.value === 'approved' ? '申诉成立' : 
+                       processResult.value === 'rejected' ? '申诉不成立' : '部分成立'
+    
+    await handleAppeal(currentItem.value.id, {
+      status: statusMap[processResult.value] || 'rejected',
+      replyContent: `${resultText}。${processNote.value}`
     })
+    
+    ElMessage.success('处理完成！')
+    closeProcessDialog()
+    closeDetailDialog()
+    
+    // 刷新列表
+    fetchAppealList()
+  } catch (error) {
+    console.error('处理申诉失败:', error)
   }
-  
-  closeProcessDialog()
-  closeDetailDialog()
-  
-  // 显示成功提示
-  alert('处理完成！')
 }
 
 function batchProcess() {
   if (selectedItems.value.length === 0) return
-  
-  const confirmMsg = `确定要批量处理选中的 ${selectedItems.value.length} 个项目吗？`
-  if (confirm(confirmMsg)) {
-    // 批量处理逻辑
-    selectedItems.value.forEach(id => {
-      const item = allItems.value.find(i => i.id === id)
-      if (item && item.status === 'pending') {
-        item.status = 'processing'
-        
-        // 添加处理历史
-        const now = new Date()
-        const timeStr = now.toLocaleString('zh-CN')
-        item.processHistory.push({
-          time: timeStr,
-          action: '开始处理',
-          operator: '当前管理员',
-          note: '批量处理开始'
-        })
-      }
-    })
-    
-    selectedItems.value = []
-    alert('批量处理已开始！')
-  }
+  ElMessage.warning('批量处理功能暂未实现')
 }
 
 function refreshList() {
-  // 刷新列表
   selectedItems.value = []
   currentPage.value = 1
-  alert('列表已刷新！')
+  fetchAppealList()
+  ElMessage.success('列表已刷新！')
+}
+
+// 分页
+function goToPage(page) {
+  currentPage.value = page
+  fetchAppealList()
 }
 
 // 生命周期
 onMounted(() => {
-  // 初始化数据
+  fetchAppealList()
 })
 </script>
 
@@ -811,15 +764,15 @@ onMounted(() => {
 }
 
 .handler-title {
-  font-size: 32px;
-  font-weight: bold;
-  color: #4f8cff;
+  font-size: 28px;
+  font-weight: 600;
+  color: #2D3436;
   margin-bottom: 12px;
 }
 
 .handler-subtitle {
-  font-size: 18px;
-  color: #666;
+  font-size: 16px;
+  color: #636E72;
   margin: 0;
 }
 
@@ -827,30 +780,31 @@ onMounted(() => {
 .stats-overview {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
+  gap: 16px;
   margin-bottom: 30px;
 }
 
 .stat-card {
-  background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
+  background: #FFFFFF;
   border-radius: 16px;
-  padding: 24px;
+  padding: 20px;
   display: flex;
   align-items: center;
   gap: 16px;
-  box-shadow: 0 4px 16px rgba(79, 140, 255, 0.1);
-  border: 1px solid #e0e7ff;
-  transition: all 0.3s;
+  box-shadow: 0 2px 12px rgba(45, 52, 54, 0.06);
+  border: 1px solid #E8E4DE;
+  transition: all 0.2s ease;
 }
 
 .stat-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(79, 140, 255, 0.2);
+  box-shadow: 0 4px 20px rgba(45, 52, 54, 0.1);
+  border-color: #6B9AC4;
 }
 
 .stat-icon {
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -859,19 +813,19 @@ onMounted(() => {
 }
 
 .stat-icon.pending {
-  background: linear-gradient(135deg, #ff9500 0%, #ff6b35 100%);
+  background: linear-gradient(135deg, #D4A574 0%, #C9735D 100%);
 }
 
 .stat-icon.processing {
-  background: linear-gradient(135deg, #4f8cff 0%, #7c3aed 100%);
+  background: linear-gradient(135deg, #6B9AC4 0%, #7D9E87 100%);
 }
 
 .stat-icon.completed {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, #7D9E87 0%, #6B9AC4 100%);
 }
 
 .stat-icon.total {
-  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+  background: linear-gradient(135deg, #636E72 0%, #2D3436 100%);
 }
 
 .stat-content {
@@ -879,60 +833,62 @@ onMounted(() => {
 }
 
 .stat-number {
-  font-size: 28px;
-  font-weight: bold;
-  color: #333;
+  font-size: 24px;
+  font-weight: 600;
+  color: #2D3436;
   margin-bottom: 4px;
 }
 
 .stat-label {
-  font-size: 14px;
-  color: #666;
+  font-size: 13px;
+  color: #636E72;
   font-weight: 500;
 }
 
 /* 筛选和搜索 */
 .filter-section {
-  background: white;
+  background: #FFFFFF;
   border-radius: 16px;
-  padding: 24px;
+  padding: 20px;
   margin-bottom: 30px;
-  box-shadow: 0 4px 16px rgba(79, 140, 255, 0.1);
-  border: 1px solid #e0e7ff;
+  box-shadow: 0 2px 12px rgba(45, 52, 54, 0.06);
+  border: 1px solid #E8E4DE;
 }
 
 .filter-tabs {
   display: flex;
   gap: 8px;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
   flex-wrap: wrap;
 }
 
 .filter-tab {
   padding: 8px 16px;
-  border-radius: 8px;
-  border: 2px solid #e0e7ff;
-  background: white;
-  color: #4f8cff;
+  border-radius: 10px;
+  border: 1px solid #E8E4DE;
+  background: #FFFFFF;
+  color: #636E72;
   font-weight: 500;
+  font-size: 14px;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.2s ease;
 }
 
 .filter-tab:hover {
-  background: #f0f5ff;
-  border-color: #4f8cff;
+  background: #FAF7F2;
+  border-color: #6B9AC4;
+  color: #2D3436;
 }
 
 .filter-tab.active {
-  background: linear-gradient(90deg, #4f8cff 0%, #7c3aed 100%);
-  color: white;
-  border-color: #7c3aed;
+  background: linear-gradient(135deg, #7D9E87 0%, #6B9AC4 100%);
+  color: #FFFFFF;
+  border-color: transparent;
 }
 
 .search-section {
   display: flex;
-  gap: 16px;
+  gap: 12px;
   align-items: center;
   flex-wrap: wrap;
 }
@@ -940,61 +896,64 @@ onMounted(() => {
 .search-input-group {
   display: flex;
   flex: 1;
-  min-width: 300px;
+  min-width: 280px;
 }
 
 .search-input {
   flex: 1;
-  padding: 12px 16px;
-  border: 2px solid #e0e7ff;
-  border-radius: 8px 0 0 8px;
-  font-size: 16px;
+  padding: 10px 14px;
+  border: 1px solid #E8E4DE;
+  border-radius: 10px 0 0 10px;
+  font-size: 15px;
   outline: none;
-  transition: border-color 0.3s;
+  transition: all 0.2s ease;
+  background: #FAF7F2;
 }
 
 .search-input:focus {
-  border-color: #4f8cff;
+  border-color: #6B9AC4;
+  box-shadow: 0 0 0 3px rgba(107, 154, 196, 0.15);
 }
 
 .search-btn {
-  padding: 12px 16px;
-  background: linear-gradient(90deg, #4f8cff 0%, #7c3aed 100%);
-  color: white;
+  padding: 10px 14px;
+  background: linear-gradient(135deg, #7D9E87 0%, #6B9AC4 100%);
+  color: #FFFFFF;
   border: none;
-  border-radius: 0 8px 8px 0;
+  border-radius: 0 10px 10px 0;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.2s ease;
 }
 
 .search-btn:hover {
-  background: linear-gradient(90deg, #7c3aed 0%, #4f8cff 100%);
+  box-shadow: 0 4px 12px rgba(107, 154, 196, 0.25);
 }
 
 .priority-filter {
-  min-width: 150px;
+  min-width: 140px;
 }
 
 .priority-select {
   width: 100%;
-  padding: 12px 16px;
-  border: 2px solid #e0e7ff;
-  border-radius: 8px;
-  font-size: 16px;
+  padding: 10px 14px;
+  border: 1px solid #E8E4DE;
+  border-radius: 10px;
+  font-size: 15px;
   outline: none;
-  transition: border-color 0.3s;
+  transition: all 0.2s ease;
+  background: #FAF7F2;
 }
 
 .priority-select:focus {
-  border-color: #4f8cff;
+  border-color: #6B9AC4;
 }
 
 /* 处理列表 */
 .handler-list {
-  background: white;
+  background: #FFFFFF;
   border-radius: 16px;
-  box-shadow: 0 4px 16px rgba(79, 140, 255, 0.1);
-  border: 1px solid #e0e7ff;
+  box-shadow: 0 2px 12px rgba(45, 52, 54, 0.06);
+  border: 1px solid #E8E4DE;
   overflow: hidden;
 }
 
@@ -1002,37 +961,40 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 24px;
-  background: linear-gradient(90deg, #f8fafc 0%, #f1f5f9 100%);
-  border-bottom: 1px solid #e0e7ff;
+  padding: 16px 20px;
+  background: #FAF7F2;
+  border-bottom: 1px solid #E8E4DE;
 }
 
 .list-title {
-  font-size: 20px;
-  font-weight: bold;
-  color: #4f8cff;
+  font-size: 18px;
+  font-weight: 600;
+  color: #2D3436;
 }
 
 .list-actions {
   display: flex;
-  gap: 12px;
+  gap: 10px;
 }
 
 .batch-btn,
 .refresh-btn {
-  padding: 8px 16px;
-  border-radius: 8px;
-  border: 2px solid #4f8cff;
-  background: white;
-  color: #4f8cff;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid #E8E4DE;
+  background: #FFFFFF;
+  color: #636E72;
   font-weight: 500;
+  font-size: 14px;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.2s ease;
 }
 
 .batch-btn:hover,
 .refresh-btn:hover {
-  background: #f0f5ff;
+  background: #FAF7F2;
+  border-color: #6B9AC4;
+  color: #2D3436;
 }
 
 .batch-btn:disabled {
@@ -1041,62 +1003,61 @@ onMounted(() => {
 }
 
 .refresh-btn {
-  padding: 8px 12px;
+  padding: 8px 10px;
 }
 
 /* 空状态 */
 .empty-state {
   text-align: center;
   padding: 60px 20px;
-  color: #666;
+  color: #636E72;
 }
 
 .empty-icon {
-  color: #ccc;
+  color: #E8E4DE;
   margin-bottom: 16px;
 }
 
 .empty-text {
-  font-size: 18px;
+  font-size: 16px;
 }
 
 /* 项目网格 */
 .items-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-  gap: 20px;
-  padding: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 16px;
+  padding: 20px;
 }
 
 .item-card {
-  background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
+  background: #FFFFFF;
   border-radius: 12px;
-  border: 2px solid #e0e7ff;
-  padding: 20px;
-  transition: all 0.3s;
-  position: relative;
+  border: 1px solid #E8E4DE;
+  padding: 18px;
+  transition: all 0.2s ease;
 }
 
 .item-card:hover {
-  border-color: #4f8cff;
-  box-shadow: 0 4px 16px rgba(79, 140, 255, 0.2);
+  border-color: #6B9AC4;
+  box-shadow: 0 4px 16px rgba(45, 52, 54, 0.08);
   transform: translateY(-2px);
 }
 
 .item-card.selected {
-  border-color: #7c3aed;
-  background: linear-gradient(135deg, #f0f5ff 0%, #f8fafc 100%);
+  border-color: #7D9E87;
+  background: #F7FBF8;
 }
 
 .item-card.urgent {
-  border-left: 4px solid #ff6b35;
+  border-left: 3px solid #C9735D;
 }
 
 .item-header {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: 10px;
+  margin-bottom: 14px;
 }
 
 .item-checkbox {
@@ -1105,113 +1066,113 @@ onMounted(() => {
 }
 
 .checkbox-input {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   cursor: pointer;
 }
 
 .item-type {
-  padding: 4px 12px;
-  border-radius: 12px;
+  padding: 4px 10px;
+  border-radius: 10px;
   font-size: 12px;
-  font-weight: bold;
+  font-weight: 500;
   color: white;
 }
 
 .item-type.appeal {
-  background: linear-gradient(90deg, #4f8cff 0%, #7c3aed 100%);
+  background: linear-gradient(135deg, #6B9AC4 0%, #7D9E87 100%);
 }
 
 .item-priority {
   padding: 4px 8px;
-  border-radius: 8px;
+  border-radius: 6px;
   font-size: 12px;
-  font-weight: bold;
+  font-weight: 600;
 }
 
 .item-priority.high {
-  background: #fee2e2;
-  color: #dc2626;
+  background: #FCE8E6;
+  color: #C9735D;
 }
 
 .item-priority.medium {
-  background: #fef3c7;
-  color: #d97706;
+  background: #FEF3E2;
+  color: #D4A574;
 }
 
 .item-priority.low {
-  background: #dcfce7;
-  color: #16a34a;
+  background: #E7F2EA;
+  color: #7D9E87;
 }
 
 .item-status {
   padding: 4px 8px;
-  border-radius: 8px;
+  border-radius: 6px;
   font-size: 12px;
-  font-weight: bold;
+  font-weight: 600;
   margin-left: auto;
 }
 
 .item-status.pending {
-  background: #fef3c7;
-  color: #d97706;
+  background: #FEF3E2;
+  color: #D4A574;
 }
 
 .item-status.processing {
-  background: #dbeafe;
-  color: #2563eb;
+  background: #E9F3FC;
+  color: #6B9AC4;
 }
 
 .item-status.completed {
-  background: #dcfce7;
-  color: #16a34a;
+  background: #E7F2EA;
+  color: #7D9E87;
 }
 
 .item-content {
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 .item-title {
-  font-size: 16px;
-  font-weight: bold;
-  color: #333;
-  margin-bottom: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #2D3436;
+  margin-bottom: 10px;
 }
 
 .item-info {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: 6px;
+  margin-bottom: 10px;
 }
 
 .info-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .info-label {
-  font-size: 14px;
-  color: #666;
+  font-size: 13px;
+  color: #636E72;
   font-weight: 500;
-  min-width: 60px;
+  min-width: 50px;
 }
 
 .info-value {
-  font-size: 14px;
-  color: #333;
+  font-size: 13px;
+  color: #2D3436;
   flex: 1;
 }
 
 .info-value.overdue {
-  color: #dc2626;
-  font-weight: bold;
+  color: #C9735D;
+  font-weight: 600;
 }
 
 .item-description {
-  font-size: 14px;
-  color: #666;
+  font-size: 13px;
+  color: #636E72;
   line-height: 1.5;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -1226,48 +1187,49 @@ onMounted(() => {
 
 .action-btn {
   padding: 6px 12px;
-  border-radius: 6px;
+  border-radius: 8px;
   border: none;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.2s ease;
 }
 
 .action-btn.view {
-  background: #f3f4f6;
-  color: #4b5563;
+  background: #FAF7F2;
+  color: #636E72;
+  border: 1px solid #E8E4DE;
 }
 
 .action-btn.view:hover {
-  background: #e5e7eb;
+  background: #E8E4DE;
 }
 
 .action-btn.process {
-  background: linear-gradient(90deg, #4f8cff 0%, #7c3aed 100%);
-  color: white;
+  background: linear-gradient(135deg, #7D9E87 0%, #6B9AC4 100%);
+  color: #FFFFFF;
 }
 
 .action-btn.process:hover {
-  background: linear-gradient(90deg, #7c3aed 0%, #4f8cff 100%);
+  box-shadow: 0 4px 12px rgba(107, 154, 196, 0.25);
 }
 
 .action-btn.complete {
-  background: linear-gradient(90deg, #10b981 0%, #059669 100%);
-  color: white;
+  background: linear-gradient(135deg, #7D9E87 0%, #6B9AC4 100%);
+  color: #FFFFFF;
 }
 
 .action-btn.complete:hover {
-  background: linear-gradient(90deg, #059669 0%, #10b981 100%);
+  box-shadow: 0 4px 12px rgba(125, 158, 135, 0.25);
 }
 
 .action-btn.review {
-  background: linear-gradient(90deg, #6b7280 0%, #4b5563 100%);
-  color: white;
+  background: linear-gradient(135deg, #636E72 0%, #2D3436 100%);
+  color: #FFFFFF;
 }
 
 .action-btn.review:hover {
-  background: linear-gradient(90deg, #4b5563 0%, #6b7280 100%);
+  box-shadow: 0 4px 12px rgba(45, 52, 54, 0.25);
 }
 
 /* 分页 */
@@ -1275,26 +1237,28 @@ onMounted(() => {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 12px;
-  padding: 20px;
-  background: #f8fafc;
-  border-top: 1px solid #e0e7ff;
+  gap: 10px;
+  padding: 16px;
+  background: #FAF7F2;
+  border-top: 1px solid #E8E4DE;
 }
 
 .page-btn {
-  padding: 8px 16px;
+  padding: 8px 14px;
   border-radius: 8px;
-  border: 2px solid #e0e7ff;
-  background: white;
-  color: #4f8cff;
+  border: 1px solid #E8E4DE;
+  background: #FFFFFF;
+  color: #636E72;
   font-weight: 500;
+  font-size: 14px;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.2s ease;
 }
 
 .page-btn:hover:not(:disabled) {
-  background: #f0f5ff;
-  border-color: #4f8cff;
+  background: #FAF7F2;
+  border-color: #6B9AC4;
+  color: #2D3436;
 }
 
 .page-btn:disabled {
@@ -1303,8 +1267,8 @@ onMounted(() => {
 }
 
 .page-info {
-  font-size: 14px;
-  color: #666;
+  font-size: 13px;
+  color: #636E72;
   margin: 0 8px;
 }
 
@@ -1316,7 +1280,7 @@ onMounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(45, 52, 54, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1326,43 +1290,43 @@ onMounted(() => {
 
 .detail-dialog,
 .process-dialog {
-  background: white;
-  border-radius: 16px;
+  background: #FFFFFF;
+  border-radius: 20px;
   max-width: 800px;
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 40px rgba(45, 52, 54, 0.2);
 }
 
 .dialog-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 24px;
-  border-bottom: 1px solid #e0e7ff;
-  background: linear-gradient(90deg, #f8fafc 0%, #f1f5f9 100%);
+  padding: 18px 24px;
+  border-bottom: 1px solid #E8E4DE;
+  background: #FAF7F2;
 }
 
 .dialog-header h3 {
-  font-size: 20px;
-  font-weight: bold;
-  color: #4f8cff;
+  font-size: 18px;
+  font-weight: 600;
+  color: #2D3436;
   margin: 0;
 }
 
 .close-btn {
   background: none;
   border: none;
-  font-size: 24px;
-  color: #666;
+  font-size: 22px;
+  color: #636E72;
   cursor: pointer;
   padding: 4px;
   line-height: 1;
 }
 
 .close-btn:hover {
-  color: #333;
+  color: #2D3436;
 }
 
 .dialog-content {
@@ -1381,52 +1345,55 @@ onMounted(() => {
 
 .detail-section h4,
 .process-section h4 {
-  font-size: 16px;
-  font-weight: bold;
-  color: #4f8cff;
+  font-size: 15px;
+  font-weight: 600;
+  color: #7D9E87;
   margin-bottom: 12px;
 }
 
 .detail-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
+  gap: 14px;
 }
 
 .detail-item {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .detail-label {
   font-weight: 500;
-  color: #666;
-  min-width: 80px;
+  color: #636E72;
+  min-width: 70px;
+  font-size: 14px;
 }
 
 .detail-value {
-  color: #333;
+  color: #2D3436;
   flex: 1;
+  font-size: 14px;
 }
 
 .content-box {
-  background: #f8fafc;
-  border-radius: 8px;
+  background: #FAF7F2;
+  border-radius: 10px;
   padding: 16px;
-  border: 1px solid #e0e7ff;
+  border: 1px solid #E8E4DE;
 }
 
 .content-title {
-  font-size: 16px;
-  font-weight: bold;
-  color: #333;
+  font-size: 15px;
+  font-weight: 600;
+  color: #2D3436;
   margin-bottom: 8px;
 }
 
 .content-description {
-  color: #666;
+  color: #636E72;
   line-height: 1.6;
+  font-size: 14px;
 }
 
 .evidence-list {
@@ -1439,33 +1406,34 @@ onMounted(() => {
   align-items: center;
   gap: 12px;
   padding: 12px;
-  background: #f8fafc;
-  border-radius: 8px;
-  border: 1px solid #e0e7ff;
+  background: #FAF7F2;
+  border-radius: 10px;
+  border: 1px solid #E8E4DE;
 }
 
 .evidence-icon {
-  color: #4f8cff;
+  color: #6B9AC4;
 }
 
 .evidence-name {
   flex: 1;
-  color: #333;
+  color: #2D3436;
+  font-size: 14px;
 }
 
 .evidence-download {
   padding: 4px 12px;
-  border-radius: 4px;
-  border: 1px solid #4f8cff;
-  background: white;
-  color: #4f8cff;
+  border-radius: 6px;
+  border: 1px solid #6B9AC4;
+  background: #FFFFFF;
+  color: #6B9AC4;
   font-size: 12px;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.2s ease;
 }
 
 .evidence-download:hover {
-  background: #f0f5ff;
+  background: #E9F3FC;
 }
 
 .history-timeline {
@@ -1480,13 +1448,13 @@ onMounted(() => {
   top: 0;
   bottom: 0;
   width: 2px;
-  background: #e0e7ff;
+  background: #E8E4DE;
 }
 
 .history-item {
   position: relative;
-  padding-bottom: 20px;
-  margin-bottom: 16px;
+  padding-bottom: 18px;
+  margin-bottom: 14px;
 }
 
 .history-item::before {
@@ -1496,10 +1464,10 @@ onMounted(() => {
   top: 6px;
   width: 8px;
   height: 8px;
-  background: #4f8cff;
+  background: #7D9E87;
   border-radius: 50%;
-  border: 2px solid white;
-  box-shadow: 0 0 0 2px #4f8cff;
+  border: 2px solid #FFFFFF;
+  box-shadow: 0 0 0 2px #7D9E87;
 }
 
 .history-item:last-child {
@@ -1508,38 +1476,39 @@ onMounted(() => {
 
 .history-time {
   font-size: 12px;
-  color: #666;
+  color: #636E72;
   margin-bottom: 4px;
 }
 
 .history-content {
-  background: #f8fafc;
-  border-radius: 8px;
+  background: #FAF7F2;
+  border-radius: 10px;
   padding: 12px;
-  border: 1px solid #e0e7ff;
+  border: 1px solid #E8E4DE;
 }
 
 .history-action {
-  font-weight: bold;
-  color: #4f8cff;
+  font-weight: 600;
+  color: #7D9E87;
   margin-bottom: 4px;
+  font-size: 14px;
 }
 
 .history-operator {
-  font-size: 14px;
-  color: #666;
+  font-size: 13px;
+  color: #636E72;
   margin-bottom: 4px;
 }
 
 .history-note {
-  font-size: 14px;
-  color: #333;
+  font-size: 13px;
+  color: #2D3436;
   line-height: 1.5;
 }
 
 .result-options {
   display: grid;
-  gap: 12px;
+  gap: 10px;
 }
 
 .result-option {
@@ -1547,15 +1516,15 @@ onMounted(() => {
   align-items: center;
   gap: 12px;
   padding: 12px;
-  border: 2px solid #e0e7ff;
-  border-radius: 8px;
+  border: 1px solid #E8E4DE;
+  border-radius: 10px;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.2s ease;
 }
 
 .result-option:hover {
-  background: #f8fafc;
-  border-color: #4f8cff;
+  background: #FAF7F2;
+  border-color: #6B9AC4;
 }
 
 .result-option input {
@@ -1565,24 +1534,26 @@ onMounted(() => {
 .process-textarea {
   width: 100%;
   padding: 12px;
-  border: 2px solid #e0e7ff;
-  border-radius: 8px;
+  border: 1px solid #E8E4DE;
+  border-radius: 10px;
   font-size: 14px;
   font-family: inherit;
   resize: vertical;
   min-height: 120px;
   outline: none;
-  transition: border-color 0.3s;
+  transition: all 0.2s ease;
+  background: #FAF7F2;
 }
 
 .process-textarea:focus {
-  border-color: #4f8cff;
+  border-color: #6B9AC4;
+  box-shadow: 0 0 0 3px rgba(107, 154, 196, 0.15);
 }
 
 .measures-list {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  gap: 10px;
 }
 
 .measure-item {
@@ -1590,14 +1561,15 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  border: 1px solid #e0e7ff;
-  border-radius: 6px;
+  border: 1px solid #E8E4DE;
+  border-radius: 8px;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.2s ease;
+  font-size: 14px;
 }
 
 .measure-item:hover {
-  background: #f8fafc;
+  background: #FAF7F2;
 }
 
 .measure-item input {
@@ -1608,34 +1580,35 @@ onMounted(() => {
   display: flex;
   justify-content: center;
   gap: 12px;
-  padding: 20px 24px;
-  border-top: 1px solid #e0e7ff;
-  background: #f8fafc;
+  padding: 16px 24px;
+  border-top: 1px solid #E8E4DE;
+  background: #FAF7F2;
 }
 
 .dialog-btn {
   padding: 10px 24px;
-  border-radius: 8px;
-  border: 2px solid #e0e7ff;
-  background: white;
-  color: #666;
+  border-radius: 10px;
+  border: 1px solid #E8E4DE;
+  background: #FFFFFF;
+  color: #636E72;
   font-weight: 500;
+  font-size: 14px;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.2s ease;
 }
 
 .dialog-btn:hover {
-  background: #f3f4f6;
+  background: #E8E4DE;
 }
 
 .dialog-btn.primary {
-  background: linear-gradient(90deg, #4f8cff 0%, #7c3aed 100%);
-  color: white;
-  border-color: #4f8cff;
+  background: linear-gradient(135deg, #7D9E87 0%, #6B9AC4 100%);
+  color: #FFFFFF;
+  border-color: transparent;
 }
 
 .dialog-btn.primary:hover {
-  background: linear-gradient(90deg, #7c3aed 0%, #4f8cff 100%);
+  box-shadow: 0 4px 16px rgba(107, 154, 196, 0.3);
 }
 
 .dialog-btn:disabled {

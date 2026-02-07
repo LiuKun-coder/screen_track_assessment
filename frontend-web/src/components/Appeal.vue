@@ -228,7 +228,7 @@
 
       <div class="step-actions">
         <button class="prev-btn" @click="prevStep">上一步</button>
-        <button class="submit-btn" @click="submitAppeal" :disabled="!agreeToTerms">提交申诉</button>
+        <button class="submit-btn" @click="doSubmitAppeal" :disabled="!agreeToTerms || submitting">{{ submitting ? '提交中...' : '提交申诉' }}</button>
       </div>
     </div>
 
@@ -256,7 +256,11 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { getMyViolations } from '@/api/violation'
+import { submitAppeal } from '@/api/appeal'
+import { uploadFile } from '@/api/upload'
+import { ElMessage } from 'element-plus'
 
 // 响应式数据
 const currentStep = ref(1)
@@ -264,42 +268,49 @@ const selectedViolation = ref(null)
 const selectedReason = ref('')
 const appealDescription = ref('')
 const uploadedFiles = ref([])
+const uploadedFileUrls = ref([]) // 上传成功后的URL
 const contactPhone = ref('')
 const contactEmail = ref('')
 const agreeToTerms = ref(false)
 const showSuccessDialog = ref(false)
 const appealNumber = ref('')
+const loading = ref(false)
+const submitting = ref(false)
 
 // 文件上传引用
 const fileInput = ref(null)
 
-// 违规记录数据
-const violationList = ref([
-  { 
-    id: 1, 
-    time: '2024-06-01 10:00', 
-    place: '东门', 
-    type: '超速', 
-    penalty: '警告处理',
-    status: '可申诉'
-  },
-  { 
-    id: 2, 
-    time: '2024-06-02 11:30', 
-    place: '西门', 
-    type: '违停', 
-    penalty: '通报批评',
-    status: '可申诉'
-  },
-  { 
-    id: 3, 
-    time: '2024-06-03 09:20', 
-    place: '南门', 
-    type: '超速', 
-    penalty: '警告处理',
-    status: '可申诉'
+// 违规记录数据（从后端获取）
+const violationList = ref([])
+
+// 从后端获取可申诉的违规记录
+async function fetchViolationList() {
+  loading.value = true
+  try {
+    const result = await getMyViolations({ page: 1, pageSize: 100 })
+    // 只显示可以申诉的记录
+    violationList.value = (result.records || [])
+      .filter(item => item.canAppeal && item.appealStatus !== 'pending')
+      .map(item => ({
+        id: item.id,
+        time: item.violationTime ? item.violationTime.replace('T', ' ').substring(0, 16) : '',
+        place: item.place,
+        type: item.type,
+        penalty: item.penalty || '待处理',
+        status: '可申诉',
+        ...item
+      }))
+  } catch (error) {
+    console.error('获取违规记录失败:', error)
+    // 使用示例数据作为后备
+    violationList.value = [
+      { id: 1, time: '2024-06-01 10:00', place: '东门', type: '超速', penalty: '警告处理', status: '可申诉' },
+      { id: 2, time: '2024-06-02 11:30', place: '西门', type: '违停', penalty: '通报批评', status: '可申诉' },
+    ]
+  } finally {
+    loading.value = false
   }
-])
+}
 
 // 申诉理由选项
 const appealReasons = [
@@ -334,8 +345,7 @@ const appealReasons = [
 const canProceedToStep3 = computed(() => {
   return selectedReason.value && 
          appealDescription.value.trim() && 
-         contactPhone.value.trim() && 
-         contactEmail.value.trim()
+         contactPhone.value.trim()
 })
 
 // 方法
@@ -359,13 +369,26 @@ function triggerFileUpload() {
   fileInput.value.click()
 }
 
-function handleFileUpload(event) {
+async function handleFileUpload(event) {
   const files = Array.from(event.target.files)
-  uploadedFiles.value.push(...files)
+  for (const file of files) {
+    try {
+      // 上传文件到后端
+      const url = await uploadFile(file)
+      uploadedFiles.value.push(file)
+      uploadedFileUrls.value.push(url)
+      ElMessage.success(`${file.name} 上传成功`)
+    } catch (error) {
+      ElMessage.error(`${file.name} 上传失败`)
+    }
+  }
+  // 清空file input以便可以再次选择同一文件
+  event.target.value = ''
 }
 
 function removeFile(index) {
   uploadedFiles.value.splice(index, 1)
+  uploadedFileUrls.value.splice(index, 1)
 }
 
 function formatFileSize(bytes) {
@@ -381,12 +404,29 @@ function getReasonLabel(value) {
   return reason ? reason.label : ''
 }
 
-function submitAppeal() {
-  // 生成申诉编号
-  appealNumber.value = 'AP' + Date.now().toString().slice(-8)
-  
-  // 显示成功对话框
-  showSuccessDialog.value = true
+async function doSubmitAppeal() {
+  submitting.value = true
+  try {
+    await submitAppeal({
+      violationId: selectedViolation.value.id,
+      reason: getReasonLabel(selectedReason.value),
+      description: appealDescription.value.trim(),
+      contactPhone: contactPhone.value.trim(),
+      evidenceFiles: uploadedFileUrls.value
+    })
+    
+    // 生成申诉编号（后端实际会返回）
+    appealNumber.value = 'AP' + Date.now().toString().slice(-8)
+    
+    // 显示成功对话框
+    showSuccessDialog.value = true
+    ElMessage.success('申诉提交成功！')
+  } catch (error) {
+    console.error('申诉提交失败:', error)
+    // 错误已在request拦截器中处理
+  } finally {
+    submitting.value = false
+  }
 }
 
 function resetForm() {
@@ -395,16 +435,24 @@ function resetForm() {
   selectedReason.value = ''
   appealDescription.value = ''
   uploadedFiles.value = []
+  uploadedFileUrls.value = []
   contactPhone.value = ''
   contactEmail.value = ''
   agreeToTerms.value = false
   showSuccessDialog.value = false
+  // 重新获取违规列表
+  fetchViolationList()
 }
 
 function closeSuccessDialog() {
   showSuccessDialog.value = false
   resetForm()
 }
+
+// 组件加载时获取数据
+onMounted(() => {
+  fetchViolationList()
+})
 </script>
 
 <style scoped>
@@ -420,15 +468,15 @@ function closeSuccessDialog() {
 }
 
 .appeal-title {
-  font-size: 32px;
-  font-weight: bold;
-  color: #4f8cff;
+  font-size: 28px;
+  font-weight: 600;
+  color: #2D3436;
   margin-bottom: 12px;
 }
 
 .appeal-subtitle {
-  font-size: 18px;
-  color: #666;
+  font-size: 16px;
+  color: #636E72;
   margin: 0;
 }
 
@@ -452,80 +500,80 @@ function closeSuccessDialog() {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: #e0e7ff;
-  color: #666;
+  background: #E8E4DE;
+  color: #9BA4A9;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: bold;
+  font-weight: 600;
   font-size: 16px;
-  transition: all 0.3s;
+  transition: all 0.2s ease;
 }
 
 .step-item.active .step-number {
-  background: #4f8cff;
+  background: linear-gradient(135deg, #7D9E87 0%, #6B9AC4 100%);
   color: white;
 }
 
 .step-item.completed .step-number {
-  background: #7c3aed;
+  background: #7D9E87;
   color: white;
 }
 
 .step-label {
   font-size: 14px;
-  color: #666;
+  color: #636E72;
   font-weight: 500;
 }
 
 .step-item.active .step-label {
-  color: #4f8cff;
-  font-weight: bold;
+  color: #2D3436;
+  font-weight: 600;
 }
 
 .step-line {
   width: 80px;
   height: 2px;
-  background: #e0e7ff;
+  background: #E8E4DE;
   margin: 0 20px;
-  transition: all 0.3s;
+  transition: all 0.2s ease;
 }
 
 .step-line.active {
-  background: #4f8cff;
+  background: linear-gradient(90deg, #7D9E87 0%, #6B9AC4 100%);
 }
 
 /* 步骤内容 */
 .appeal-step-content {
-  background: white;
+  background: #FFFFFF;
   border-radius: 16px;
-  padding: 30px;
-  box-shadow: 0 4px 24px rgba(79, 140, 255, 0.1);
-  border: 1px solid #e0e7ff;
+  padding: 32px;
+  box-shadow: 0 2px 12px rgba(45, 52, 54, 0.06);
+  border: 1px solid #E8E4DE;
 }
 
 .step-title {
-  font-size: 24px;
-  font-weight: bold;
-  color: #4f8cff;
-  margin-bottom: 30px;
+  font-size: 20px;
+  font-weight: 600;
+  color: #2D3436;
+  margin-bottom: 24px;
   text-align: center;
 }
 
 /* 违规记录列表 */
 .violation-list {
   display: grid;
-  gap: 20px;
-  margin-bottom: 30px;
+  gap: 16px;
+  margin-bottom: 24px;
 }
 
 .violation-item {
-  background: linear-gradient(90deg, #f8fafc 0%, #fff 100%);
-  border: 2px solid #e0e7ff;
-  border-radius: 16px;
-  padding: 24px;
+  background: #FFFCF8;
+  border: 1px solid #E8E4DE;
+  border-radius: 12px;
+  padding: 20px;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.2s ease;
   position: relative;
   display: flex;
   justify-content: space-between;
@@ -533,14 +581,14 @@ function closeSuccessDialog() {
 }
 
 .violation-item:hover {
-  border-color: #4f8cff;
-  box-shadow: 0 4px 16px rgba(79, 140, 255, 0.2);
+  border-color: #6B9AC4;
+  box-shadow: 0 4px 12px rgba(107, 154, 196, 0.15);
 }
 
 .violation-item.selected {
-  border-color: #7c3aed;
-  background: linear-gradient(90deg, #f0f5ff 0%, #fff 100%);
-  box-shadow: 0 4px 24px rgba(124, 58, 237, 0.2);
+  border-color: #7D9E87;
+  background: #E7F2EA;
+  box-shadow: 0 4px 16px rgba(125, 158, 135, 0.2);
 }
 
 .violation-info {
@@ -550,8 +598,8 @@ function closeSuccessDialog() {
 .violation-row {
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 12px;
+  gap: 12px;
+  margin-bottom: 10px;
 }
 
 .violation-row:last-child {
@@ -559,29 +607,29 @@ function closeSuccessDialog() {
 }
 
 .violation-label {
-  background: linear-gradient(90deg, #7c3aed 0%, #4f8cff 100%);
+  background: linear-gradient(135deg, #7D9E87 0%, #6B9AC4 100%);
   color: white;
-  padding: 6px 16px;
-  border-radius: 8px;
-  font-size: 14px;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 13px;
   font-weight: 500;
-  min-width: 80px;
+  min-width: 70px;
   text-align: center;
 }
 
 .violation-value {
-  font-size: 16px;
-  color: #333;
+  font-size: 14px;
+  color: #2D3436;
   font-weight: 500;
 }
 
 .violation-value.penalty {
-  color: #ff6b6b;
-  font-weight: bold;
+  color: #C9735D;
+  font-weight: 600;
 }
 
 .selection-indicator {
-  color: #7c3aed;
+  color: #7D9E87;
   font-size: 24px;
 }
 
@@ -590,16 +638,16 @@ function closeSuccessDialog() {
 .appeal-description-section,
 .evidence-section,
 .contact-section {
-  margin-bottom: 30px;
+  margin-bottom: 24px;
 }
 
 .appeal-reason-section h4,
 .appeal-description-section h4,
 .evidence-section h4,
 .contact-section h4 {
-  font-size: 18px;
-  font-weight: bold;
-  color: #4f8cff;
+  font-size: 16px;
+  font-weight: 600;
+  color: #2D3436;
   margin-bottom: 16px;
 }
 
@@ -613,26 +661,27 @@ function closeSuccessDialog() {
   align-items: flex-start;
   gap: 12px;
   padding: 16px;
-  border: 2px solid #e0e7ff;
+  border: 1px solid #E8E4DE;
   border-radius: 12px;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.2s ease;
+  background: #FFFFFF;
 }
 
 .reason-option:hover {
-  border-color: #4f8cff;
-  background: #f8fafc;
+  border-color: #6B9AC4;
+  background: #FAF7F2;
 }
 
 .reason-option.selected {
-  border-color: #7c3aed;
-  background: #f0f5ff;
+  border-color: #7D9E87;
+  background: #E7F2EA;
 }
 
 .reason-radio {
   width: 20px;
   height: 20px;
-  border: 2px solid #ccc;
+  border: 2px solid #E8E4DE;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -641,13 +690,13 @@ function closeSuccessDialog() {
 }
 
 .reason-option.selected .reason-radio {
-  border-color: #7c3aed;
+  border-color: #7D9E87;
 }
 
 .radio-dot {
   width: 10px;
   height: 10px;
-  background: #7c3aed;
+  background: #7D9E87;
   border-radius: 50%;
 }
 
@@ -656,71 +705,74 @@ function closeSuccessDialog() {
 }
 
 .reason-title {
-  font-size: 16px;
-  font-weight: bold;
-  color: #333;
+  font-size: 15px;
+  font-weight: 600;
+  color: #2D3436;
   margin-bottom: 4px;
 }
 
 .reason-desc {
   font-size: 14px;
-  color: #666;
+  color: #636E72;
 }
 
 /* 文本域 */
 .appeal-textarea {
   width: 100%;
   padding: 16px;
-  border: 2px solid #e0e7ff;
+  border: 1px solid #E8E4DE;
   border-radius: 12px;
-  font-size: 16px;
+  font-size: 15px;
   font-family: inherit;
   resize: vertical;
   min-height: 120px;
-  transition: border-color 0.3s;
+  transition: border-color 0.2s ease;
+  background: #FAF7F2;
 }
 
 .appeal-textarea:focus {
   outline: none;
-  border-color: #4f8cff;
+  border-color: #6B9AC4;
+  box-shadow: 0 0 0 3px rgba(107, 154, 196, 0.15);
 }
 
 .char-count {
   text-align: right;
-  font-size: 14px;
-  color: #666;
+  font-size: 13px;
+  color: #9BA4A9;
   margin-top: 8px;
 }
 
 /* 文件上传 */
 .upload-area {
-  border: 2px dashed #e0e7ff;
+  border: 2px dashed #E8E4DE;
   border-radius: 12px;
   padding: 40px;
   text-align: center;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.2s ease;
+  background: #FAF7F2;
 }
 
 .upload-area:hover {
-  border-color: #4f8cff;
-  background: #f8fafc;
+  border-color: #6B9AC4;
+  background: #FFFCF8;
 }
 
 .upload-area svg {
-  color: #4f8cff;
+  color: #6B9AC4;
   margin-bottom: 16px;
 }
 
 .upload-area p {
   margin: 8px 0;
-  color: #333;
+  color: #2D3436;
   font-weight: 500;
 }
 
 .upload-hint {
-  font-size: 14px;
-  color: #666;
+  font-size: 13px;
+  color: #9BA4A9;
 }
 
 .uploaded-files {
@@ -732,9 +784,10 @@ function closeSuccessDialog() {
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  background: #f8fafc;
+  background: #FAF7F2;
   border-radius: 8px;
   margin-bottom: 8px;
+  border: 1px solid #E8E4DE;
 }
 
 .file-info {
@@ -745,16 +798,16 @@ function closeSuccessDialog() {
 
 .file-name {
   font-weight: 500;
-  color: #333;
+  color: #2D3436;
 }
 
 .file-size {
-  font-size: 14px;
-  color: #666;
+  font-size: 13px;
+  color: #9BA4A9;
 }
 
 .remove-file-btn {
-  background: #ff6b6b;
+  background: #C9735D;
   color: white;
   border: none;
   border-radius: 50%;
@@ -765,6 +818,11 @@ function closeSuccessDialog() {
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.remove-file-btn:hover {
+  background: #b86350;
 }
 
 /* 联系方式 */
@@ -782,58 +840,64 @@ function closeSuccessDialog() {
 
 .input-group label {
   font-weight: 500;
-  color: #333;
+  color: #2D3436;
+  font-size: 14px;
 }
 
 .contact-input {
   padding: 12px 16px;
-  border: 2px solid #e0e7ff;
-  border-radius: 8px;
-  font-size: 16px;
-  transition: border-color 0.3s;
+  border: 1px solid #E8E4DE;
+  border-radius: 10px;
+  font-size: 15px;
+  transition: all 0.2s ease;
+  background: #FAF7F2;
 }
 
 .contact-input:focus {
   outline: none;
-  border-color: #4f8cff;
+  border-color: #6B9AC4;
+  box-shadow: 0 0 0 3px rgba(107, 154, 196, 0.15);
 }
 
 /* 违规记录摘要 */
 .selected-violation-summary {
-  background: #f0f5ff;
-  border: 1px solid #e0e7ff;
+  background: #E7F2EA;
+  border: 1px solid #7D9E87;
   border-radius: 12px;
   padding: 20px;
-  margin-bottom: 30px;
+  margin-bottom: 24px;
 }
 
 .selected-violation-summary h4 {
-  font-size: 16px;
-  color: #4f8cff;
+  font-size: 15px;
+  color: #7D9E87;
   margin-bottom: 12px;
+  font-weight: 600;
 }
 
 .summary-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  color: #2D3436;
 }
 
 .penalty-text {
-  color: #ff6b6b;
-  font-weight: bold;
+  color: #C9735D;
+  font-weight: 600;
 }
 
 /* 申诉摘要 */
 .appeal-summary {
-  background: #f8fafc;
+  background: #FAF7F2;
   border-radius: 12px;
   padding: 24px;
-  margin-bottom: 30px;
+  margin-bottom: 24px;
+  border: 1px solid #E8E4DE;
 }
 
 .summary-section {
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .summary-section:last-child {
@@ -841,16 +905,18 @@ function closeSuccessDialog() {
 }
 
 .summary-section h4 {
-  font-size: 16px;
-  color: #4f8cff;
+  font-size: 15px;
+  color: #7D9E87;
   margin-bottom: 12px;
+  font-weight: 600;
 }
 
 .summary-item {
-  background: white;
+  background: #FFFFFF;
   padding: 16px;
   border-radius: 8px;
-  border: 1px solid #e0e7ff;
+  border: 1px solid #E8E4DE;
+  color: #2D3436;
 }
 
 .summary-item.description {
@@ -860,18 +926,18 @@ function closeSuccessDialog() {
 
 .file-tag {
   display: inline-block;
-  background: #e0e7ff;
-  color: #4f8cff;
+  background: #E9F3FC;
+  color: #6B9AC4;
   padding: 4px 12px;
   border-radius: 16px;
-  font-size: 14px;
+  font-size: 13px;
   margin-right: 8px;
   margin-bottom: 8px;
 }
 
 /* 协议复选框 */
 .agreement-section {
-  margin-bottom: 30px;
+  margin-bottom: 24px;
 }
 
 .agreement-checkbox {
@@ -879,8 +945,8 @@ function closeSuccessDialog() {
   align-items: center;
   gap: 12px;
   cursor: pointer;
-  font-size: 16px;
-  color: #333;
+  font-size: 14px;
+  color: #2D3436;
 }
 
 .agreement-checkbox input {
@@ -890,72 +956,74 @@ function closeSuccessDialog() {
 .checkmark {
   width: 20px;
   height: 20px;
-  border: 2px solid #e0e7ff;
+  border: 2px solid #E8E4DE;
   border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s;
+  transition: all 0.2s ease;
 }
 
 .agreement-checkbox input:checked + .checkmark {
-  background: #4f8cff;
-  border-color: #4f8cff;
+  background: #7D9E87;
+  border-color: #7D9E87;
 }
 
 .agreement-checkbox input:checked + .checkmark::after {
   content: '✓';
   color: white;
   font-weight: bold;
+  font-size: 12px;
 }
 
 /* 按钮 */
 .step-actions {
   display: flex;
   justify-content: center;
-  gap: 20px;
-  margin-top: 30px;
+  gap: 16px;
+  margin-top: 24px;
 }
 
 .prev-btn,
 .next-btn,
 .submit-btn {
-  padding: 12px 32px;
-  border-radius: 12px;
-  font-size: 16px;
-  font-weight: bold;
+  padding: 12px 28px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.2s ease;
   border: none;
 }
 
 .prev-btn {
-  background: white;
-  color: #4f8cff;
-  border: 2px solid #4f8cff;
+  background: #FFFFFF;
+  color: #636E72;
+  border: 1px solid #E8E4DE;
 }
 
 .prev-btn:hover {
-  background: #f0f5ff;
+  background: #FAF7F2;
+  border-color: #6B9AC4;
 }
 
 .next-btn,
 .submit-btn {
-  background: linear-gradient(90deg, #4f8cff 0%, #7c3aed 100%);
+  background: linear-gradient(135deg, #7D9E87 0%, #6B9AC4 100%);
   color: white;
+  box-shadow: 0 2px 8px rgba(107, 154, 196, 0.2);
 }
 
 .next-btn:hover,
 .submit-btn:hover {
-  background: linear-gradient(90deg, #7c3aed 0%, #4f8cff 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(79, 140, 255, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(107, 154, 196, 0.35);
 }
 
 .next-btn:disabled,
 .submit-btn:disabled {
-  background: #e0e7ff;
-  color: #aaa;
+  background: #E8E4DE;
+  color: #9BA4A9;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
@@ -968,7 +1036,7 @@ function closeSuccessDialog() {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(45, 52, 54, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -976,30 +1044,31 @@ function closeSuccessDialog() {
 }
 
 .success-dialog {
-  background: white;
-  border-radius: 16px;
+  background: #FFFFFF;
+  border-radius: 20px;
   padding: 40px;
-  max-width: 500px;
+  max-width: 480px;
   width: 90%;
   text-align: center;
+  box-shadow: 0 8px 40px rgba(45, 52, 54, 0.15);
 }
 
 .success-icon {
-  color: #4f8cff;
+  color: #7D9E87;
   margin-bottom: 20px;
 }
 
 .success-title {
-  font-size: 24px;
-  font-weight: bold;
-  color: #4f8cff;
+  font-size: 22px;
+  font-weight: 600;
+  color: #2D3436;
   margin-bottom: 20px;
 }
 
 .success-message {
-  color: #666;
+  color: #636E72;
   line-height: 1.6;
-  margin-bottom: 30px;
+  margin-bottom: 28px;
 }
 
 .success-message p {
@@ -1014,27 +1083,29 @@ function closeSuccessDialog() {
 
 .success-btn {
   padding: 12px 24px;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: bold;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s;
-  border: 2px solid #4f8cff;
-  background: white;
-  color: #4f8cff;
+  transition: all 0.2s ease;
+  border: 1px solid #E8E4DE;
+  background: #FFFFFF;
+  color: #636E72;
 }
 
 .success-btn.primary {
-  background: #4f8cff;
+  background: linear-gradient(135deg, #7D9E87 0%, #6B9AC4 100%);
   color: white;
+  border: none;
 }
 
 .success-btn:hover {
-  background: #f0f5ff;
+  background: #FAF7F2;
 }
 
 .success-btn.primary:hover {
-  background: #7c3aed;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(107, 154, 196, 0.35);
 }
 
 @media (max-width: 768px) {

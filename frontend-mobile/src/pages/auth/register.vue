@@ -211,7 +211,7 @@ function goToLogin() {
 <style lang="scss" scoped>
 .register-page {
   min-height: 100vh;
-  background: #F5F5F5;
+  background: #FAF7F2;
   padding: 0 32rpx;
 }
 
@@ -222,20 +222,21 @@ function goToLogin() {
 .title {
   font-size: 48rpx;
   font-weight: 600;
-  color: #333333;
+  color: #2D3436;
   display: block;
   margin-bottom: 12rpx;
 }
 
 .desc {
   font-size: 28rpx;
-  color: #666666;
+  color: #636E72;
 }
 
 .register-form {
   background: #FFFFFF;
-  border-radius: 24rpx;
+  border-radius: 32rpx;
   padding: 40rpx 32rpx;
+  box-shadow: 0 4rpx 16rpx rgba(45, 52, 54, 0.06);
 }
 
 .form-item {
@@ -244,7 +245,7 @@ function goToLogin() {
 
 .label {
   font-size: 28rpx;
-  color: #333333;
+  color: #2D3436;
   margin-bottom: 16rpx;
   display: block;
 }
@@ -252,11 +253,12 @@ function goToLogin() {
 .input {
   width: 100%;
   height: 96rpx;
-  border: 2rpx solid #E5E5E5;
-  border-radius: 12rpx;
+  border: 2rpx solid #E8E4DE;
+  border-radius: 20rpx;
   padding: 0 24rpx;
-  font-size: 32rpx;
+  font-size: 30rpx;
   box-sizing: border-box;
+  background: #FAF7F2;
 }
 
 .input-group {
@@ -271,8 +273,8 @@ function goToLogin() {
 .code-btn {
   width: 200rpx;
   height: 96rpx;
-  background: #007AFF;
-  border-radius: 12rpx;
+  background: #6B9AC4;
+  border-radius: 20rpx;
   color: #FFFFFF;
   font-size: 28rpx;
   display: flex;
@@ -280,7 +282,7 @@ function goToLogin() {
   justify-content: center;
   
   &.disabled {
-    background: #CCCCCC;
+    background: #9BA4A9;
   }
 }
 
@@ -294,8 +296,8 @@ function goToLogin() {
 .checkbox {
   width: 36rpx;
   height: 36rpx;
-  border: 2rpx solid #CCCCCC;
-  border-radius: 6rpx;
+  border: 2rpx solid #9BA4A9;
+  border-radius: 8rpx;
   margin-right: 12rpx;
   display: flex;
   align-items: center;
@@ -304,25 +306,25 @@ function goToLogin() {
   color: #FFFFFF;
   
   &.checked {
-    background: #007AFF;
-    border-color: #007AFF;
+    background: #7D9E87;
+    border-color: #7D9E87;
   }
 }
 
 .text {
   font-size: 24rpx;
-  color: #666666;
+  color: #636E72;
 }
 
 .link {
   font-size: 24rpx;
-  color: #007AFF;
+  color: #6B9AC4;
 }
 
 .login-link {
   text-align: center;
   font-size: 28rpx;
-  color: #666666;
+  color: #636E72;
   
   .link {
     font-size: 28rpx;

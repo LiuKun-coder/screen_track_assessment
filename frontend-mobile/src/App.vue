@@ -36,13 +36,22 @@ export default {
 </script>
 
 <style lang="scss">
+/* ========================================
+   温暖自然的设计风格
+   - 米白背景 #FAF7F2
+   - 鼠尾草绿 #7D9E87
+   - 陶土红 #C9735D
+   - 天空蓝 #6B9AC4
+   - 暖杏色 #D4A574
+======================================== */
+
 /* 页面公共样式 */
 page {
-  background-color: #F5F5F5;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background-color: #FAF7F2;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', sans-serif;
   font-size: 28rpx;
-  color: #333333;
-  line-height: 1.5;
+  color: #2D3436;
+  line-height: 1.6;
 }
 
 /* 容器 */
@@ -55,7 +64,7 @@ page {
 
 .page-container {
   min-height: 100vh;
-  background-color: #F5F5F5;
+  background-color: #FAF7F2;
 }
 
 /* Flex 布局 */
@@ -87,7 +96,7 @@ page {
 /* 按钮样式 */
 .btn {
   height: 88rpx;
-  border-radius: 12rpx;
+  border-radius: 20rpx;
   font-size: 32rpx;
   font-weight: 500;
   display: flex;
@@ -98,14 +107,14 @@ page {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #007AFF 0%, #5AC8FA 100%);
+  background: linear-gradient(135deg, #7D9E87 0%, #6B9AC4 100%);
   color: #FFFFFF;
 }
 
 .btn-outline {
-  border: 2rpx solid #007AFF;
+  border: 2rpx solid #7D9E87;
   background: transparent;
-  color: #007AFF;
+  color: #7D9E87;
 }
 
 .btn-disabled {
@@ -116,8 +125,8 @@ page {
 /* 卡片样式 */
 .card {
   background: #FFFFFF;
-  border-radius: 16rpx;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
+  border-radius: 24rpx;
+  box-shadow: 0 4rpx 16rpx rgba(45, 52, 54, 0.06);
   padding: 32rpx;
   margin-bottom: 24rpx;
 }
@@ -125,17 +134,18 @@ page {
 /* 输入框样式 */
 .input {
   width: 100%;
-  height: 88rpx;
-  border: 2rpx solid #E5E5E5;
-  border-radius: 12rpx;
+  height: 96rpx;
+  border: 2rpx solid #E8E4DE;
+  border-radius: 20rpx;
   padding: 0 24rpx;
-  font-size: 32rpx;
+  font-size: 30rpx;
   box-sizing: border-box;
-  background: #FFFFFF;
+  background: #FAF7F2;
 }
 
 .input-focus {
-  border-color: #007AFF;
+  border-color: #6B9AC4;
+  background: #FFFFFF;
 }
 
 /* 间距工具类 */
@@ -164,11 +174,11 @@ page {
 .p-32 { padding: 32rpx; }
 
 /* 文字样式 */
-.text-primary { color: #007AFF; }
-.text-success { color: #4CD964; }
-.text-warning { color: #FF9500; }
-.text-danger { color: #FF3B30; }
-.text-muted { color: #999999; }
+.text-primary { color: #7D9E87; }
+.text-success { color: #7D9E87; }
+.text-warning { color: #D4A574; }
+.text-danger { color: #C9735D; }
+.text-muted { color: #9BA4A9; }
 
 .text-center { text-align: center; }
 .text-right { text-align: right; }
@@ -184,7 +194,7 @@ page {
 /* 分割线 */
 .divider {
   height: 1rpx;
-  background-color: #F0F0F0;
+  background-color: #E8E4DE;
   margin: 24rpx 0;
 }
 
@@ -209,7 +219,7 @@ page {
   
   .empty-text {
     font-size: 28rpx;
-    color: #999999;
+    color: #9BA4A9;
   }
 }
 
@@ -218,6 +228,6 @@ page {
   padding: 32rpx;
   text-align: center;
   font-size: 26rpx;
-  color: #999999;
+  color: #9BA4A9;
 }
 </style>

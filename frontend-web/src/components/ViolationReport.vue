@@ -53,57 +53,101 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { getViolationList } from '@/api/violation'
 
-// 违规通报示例数据与功能
-const reportList = ref([
-  { id: 1, name: '用户A', time: '2024-06-01 10:00', place: '东门', type: '超速', phone: '138****8888' },
-  { id: 2, name: '用户B', time: '2024-06-02 11:30', place: '西门', type: '违停', phone: '139****6666' },
-  { id: 3, name: '用户C', time: '2024-06-03 09:20', place: '南门', type: '超速', phone: '137****7777' },
-  { id: 4, name: '用户D', time: '2024-06-04 14:10', place: '北门', type: '违停', phone: '136****8888' },
-  { id: 5, name: '用户E', time: '2024-06-05 16:40', place: '东门', type: '违停', phone: '135****9999' },
-  { id: 6, name: '用户F', time: '2024-06-06 13:00', place: '西门', type: '超速', phone: '134****0000' },
-  { id: 7, name: '用户G', time: '2024-06-07 08:50', place: '南门', type: '违停', phone: '133****1111' },
-  { id: 8, name: '用户H', time: '2024-06-08 12:20', place: '北门', type: '超速', phone: '132****2222' },
-])
+// 违规通报数据
+const reportList = ref([])
+const loading = ref(false)
+const total = ref(0)
 
 const reportPageSize = 5
 const reportCurrentPage = ref(1)
 const reportFilterType = ref('全部')
 const reportFilterPlace = ref('全部')
 const reportFilterTime = ref('')
-const reportTypeOptions = ['全部', '超速', '违停']
+const reportTypeOptions = ['全部', '超速', '违停', '逆行', '闯红灯']
 const reportPlaceOptions = ['全部', '东门', '西门', '南门', '北门']
 
 const showReportTypeFilter = ref(false)
 const showReportPlaceFilter = ref(false)
 const showReportTimeFilter = ref(false)
 
+// 从后端获取数据
+async function fetchViolationList() {
+  loading.value = true
+  try {
+    const params = {
+      page: reportCurrentPage.value,
+      pageSize: reportPageSize
+    }
+    
+    // 添加筛选条件
+    if (reportFilterType.value !== '全部') {
+      params.type = reportFilterType.value
+    }
+    if (reportFilterTime.value.trim()) {
+      params.startTime = reportFilterTime.value.trim()
+      params.endTime = reportFilterTime.value.trim()
+    }
+    
+    const result = await getViolationList(params)
+    
+    // 转换数据格式以适配模板
+    reportList.value = (result.records || []).map(item => ({
+      id: item.id,
+      name: item.userName || '未知用户',
+      time: item.violationTime ? item.violationTime.replace('T', ' ').substring(0, 16) : '',
+      place: item.place,
+      type: item.type,
+      phone: item.phone || '***',
+      // 保留原始数据
+      ...item
+    }))
+    total.value = result.total || 0
+  } catch (error) {
+    console.error('获取违规列表失败:', error)
+    // 使用示例数据作为后备
+    reportList.value = [
+      { id: 1, name: '用户A', time: '2024-06-01 10:00', place: '东门', type: '超速', phone: '138****8888' },
+      { id: 2, name: '用户B', time: '2024-06-02 11:30', place: '西门', type: '违停', phone: '139****6666' },
+    ]
+    total.value = reportList.value.length
+  } finally {
+    loading.value = false
+  }
+}
+
+// 本地筛选（地点筛选在前端处理）
 const filteredReportList = computed(() => {
   let list = reportList.value
-  if (reportFilterType.value !== '全部') list = list.filter(r => r.type === reportFilterType.value)
-  if (reportFilterPlace.value !== '全部') list = list.filter(r => r.place === reportFilterPlace.value)
-  if (reportFilterTime.value.trim()) list = list.filter(r => r.time.startsWith(reportFilterTime.value.trim()))
+  if (reportFilterPlace.value !== '全部') {
+    list = list.filter(r => r.place === reportFilterPlace.value)
+  }
   return list
 })
 
-const reportTotalPage = computed(() => Math.ceil(filteredReportList.value.length / reportPageSize))
-const pagedReportList = computed(() => {
-  const start = (reportCurrentPage.value - 1) * reportPageSize
-  return filteredReportList.value.slice(start, start + reportPageSize)
-})
+const reportTotalPage = computed(() => Math.max(1, Math.ceil(total.value / reportPageSize)))
+const pagedReportList = computed(() => filteredReportList.value)
 
 function reportPrevPage() {
-  if (reportCurrentPage.value > 1) reportCurrentPage.value--
+  if (reportCurrentPage.value > 1) {
+    reportCurrentPage.value--
+    fetchViolationList()
+  }
 }
 
 function reportNextPage() {
-  if (reportCurrentPage.value < reportTotalPage.value) reportCurrentPage.value++
+  if (reportCurrentPage.value < reportTotalPage.value) {
+    reportCurrentPage.value++
+    fetchViolationList()
+  }
 }
 
 function setReportType(type) {
   reportFilterType.value = type
   reportCurrentPage.value = 1
+  fetchViolationList()
 }
 
 function setReportPlace(place) {
@@ -114,6 +158,7 @@ function setReportPlace(place) {
 function applyTimeFilter() {
   reportCurrentPage.value = 1
   showReportTimeFilter.value = false
+  fetchViolationList()
 }
 
 function toggleReportTypeFilter() {
@@ -133,6 +178,11 @@ function toggleReportTimeFilter() {
   showReportTypeFilter.value = false
   showReportPlaceFilter.value = false
 }
+
+// 组件加载时获取数据
+onMounted(() => {
+  fetchViolationList()
+})
 </script>
 
 <style scoped>
@@ -143,7 +193,7 @@ function toggleReportTimeFilter() {
 }
 
 .report-header {
-  margin-bottom: 18px;
+  margin-bottom: 24px;
   display: flex;
   justify-content: flex-start;
 }
@@ -151,194 +201,186 @@ function toggleReportTimeFilter() {
 .report-filter-group {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px 18px;
+  gap: 12px;
 }
 
 .report-filter-btn {
-  background: #fff;
-  border: 2px solid #4f8cff;
+  background: #FFFFFF;
+  border: 1px solid #E8E4DE;
   border-radius: 10px;
-  padding: 7px 22px;
-  font-size: 16px;
-  font-weight: bold;
-  color: #4f8cff;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #636E72;
   cursor: pointer;
-  transition: background 0.22s, color 0.22s, box-shadow 0.22s, transform 0.18s;
-  box-shadow: 0 2px 8px 0 #4f8cff11;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(45, 52, 54, 0.04);
 }
 
 .report-filter-btn.active, .report-filter-btn:hover {
-  background: linear-gradient(90deg, #4f8cff 0%, #7c3aed 100%);
-  color: #fff;
-  transform: scale(1.07);
-  box-shadow: 0 4px 16px 0 #4f8cff33;
+  background: linear-gradient(135deg, #7D9E87 0%, #6B9AC4 100%);
+  color: #FFFFFF;
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(107, 154, 196, 0.25);
 }
 
 .report-list {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 28px;
-  margin-bottom: 32px;
+  gap: 16px;
+  margin-bottom: 24px;
 }
 
 .report-item {
-  background: linear-gradient(90deg, #f0f5ff 0%, #fff 100%);
-  border-radius: 20px;
-  border: 2.5px solid #e0e7ff;
-  box-shadow: 0 4px 24px 0 #4f8cff11, 0 1.5px 6px 0 #ffb6c122;
-  padding: 22px 38px;
+  background: #FFFFFF;
+  border-radius: 16px;
+  border: 1px solid #E8E4DE;
+  box-shadow: 0 2px 12px rgba(45, 52, 54, 0.04);
+  padding: 20px 28px;
   display: flex;
   align-items: center;
-  transition: box-shadow 0.25s, transform 0.18s, border 0.25s;
-  position: relative;
-  overflow: hidden;
+  transition: all 0.2s ease;
 }
 
 .report-item:hover {
-  box-shadow: 0 8px 32px 0 #4f8cff33, 0 2px 8px 0 #ffb6c133;
-  border: 2.5px solid #7c3aed;
-  transform: translateY(-3px) scale(1.03);
-  z-index: 1;
+  box-shadow: 0 4px 20px rgba(45, 52, 54, 0.08);
+  transform: translateY(-2px);
+  border-color: #6B9AC4;
 }
 
 .report-info {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .report-meta {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 12px;
 }
 
 .report-name {
-  font-size: 20px;
-  font-weight: bold;
-  color: #4f8cff;
-  letter-spacing: 1px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #2D3436;
 }
 
 .report-type {
-  font-size: 16px;
-  color: #7c3aed;
-  background: #e0e7ff;
-  border-radius: 8px;
-  padding: 2px 12px;
-  margin-left: 8px;
+  font-size: 13px;
+  color: #7D9E87;
+  background: #E7F2EA;
+  border-radius: 6px;
+  padding: 4px 12px;
+  font-weight: 500;
 }
 
 .report-detail {
   display: flex;
-  gap: 32px;
-  font-size: 16px;
-  color: #333;
+  gap: 24px;
+  font-size: 14px;
+  color: #636E72;
 }
 
 .report-time {
-  color: #7c3aed;
+  color: #6B9AC4;
 }
 
 .report-place {
-  color: #4f8cff;
+  color: #D4A574;
 }
 
 .report-phone {
-  color: #888;
+  color: #9BA4A9;
 }
 
 .report-pagination {
   display: flex;
   justify-content: flex-end;
-  gap: 24px;
+  gap: 16px;
   margin-top: 16px;
 }
 
 .page-btn.beautify {
-  background: linear-gradient(90deg, #7c3aed 0%, #4f8cff 100%);
-  color: #fff;
+  background: linear-gradient(135deg, #7D9E87 0%, #6B9AC4 100%);
+  color: #FFFFFF;
   border: none;
-  border-radius: 14px;
-  padding: 10px 36px;
-  font-size: 18px;
-  font-weight: bold;
+  border-radius: 10px;
+  padding: 10px 28px;
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
-  box-shadow: 0 4px 16px 0 #7c3aed22;
-  transition: background 0.25s, transform 0.18s, box-shadow 0.25s;
-  letter-spacing: 1px;
-  margin: 0 2px;
+  box-shadow: 0 2px 8px rgba(107, 154, 196, 0.2);
+  transition: all 0.2s ease;
 }
 
 .page-btn.beautify:disabled {
-  background: #e0e7ff;
-  color: #aaa;
+  background: #E8E4DE;
+  color: #9BA4A9;
   cursor: not-allowed;
   box-shadow: none;
 }
 
 .page-btn.beautify:hover:not(:disabled) {
-  background: linear-gradient(90deg, #ffb6c1 0%, #4f8cff 100%);
-  color: #222;
-  transform: translateY(-2px) scale(1.04);
-  box-shadow: 0 8px 32px 0 #ffb6c144;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(107, 154, 196, 0.35);
 }
 
 .report-dropdown {
   position: absolute;
-  top: 40px;
+  top: 45px;
   left: 0;
-  background: #fff;
+  background: #FFFFFF;
   border-radius: 12px;
-  box-shadow: 0 4px 24px 0 #4f8cff22;
-  min-width: 120px;
+  box-shadow: 0 4px 20px rgba(45, 52, 54, 0.1);
+  min-width: 140px;
   z-index: 10;
-  padding: 6px 0;
-  border: 1.5px solid #e0e7ff;
+  padding: 8px 0;
+  border: 1px solid #E8E4DE;
 }
 
 .report-dropdown-item {
-  padding: 8px 18px;
-  font-size: 15px;
-  color: #4f8cff;
+  padding: 10px 18px;
+  font-size: 14px;
+  color: #636E72;
   cursor: pointer;
-  transition: background 0.18s, color 0.18s;
+  transition: all 0.2s ease;
 }
 
 .report-dropdown-item.active,
 .report-dropdown-item:hover {
-  background: #e0e7ff;
-  color: #7c3aed;
+  background: #FAF7F2;
+  color: #2D3436;
 }
 
 .report-dropdown.time-filter {
-  min-width: 200px;
+  min-width: 220px;
 }
 
 .time-filter-btn {
-  background: #4f8cff;
-  color: #fff;
+  background: linear-gradient(135deg, #7D9E87 0%, #6B9AC4 100%);
+  color: #FFFFFF;
   border: none;
   border-radius: 6px;
-  padding: 4px 12px;
+  padding: 6px 14px;
   font-size: 13px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s ease;
 }
 
 .time-filter-btn:hover {
-  background: #7c3aed;
+  opacity: 0.9;
 }
 
 .time-filter-btn.cancel {
-  background: #fff;
-  color: #4f8cff;
-  border: 1px solid #4f8cff;
+  background: #FFFFFF;
+  color: #636E72;
+  border: 1px solid #E8E4DE;
 }
 
 .time-filter-btn.cancel:hover {
-  background: #f0f5ff;
+  background: #FAF7F2;
 }
 </style> 

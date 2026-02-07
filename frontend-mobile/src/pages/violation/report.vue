@@ -178,7 +178,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: #F5F5F5;
+  background: #FAF7F2;
 }
 
 .filter-bar {
@@ -187,22 +187,23 @@ onMounted(() => {
   padding: 20rpx 32rpx;
   background: #FFFFFF;
   gap: 16rpx;
+  box-shadow: 0 2rpx 8rpx rgba(45, 52, 54, 0.04);
 }
 
 .filter-btn {
   display: flex;
   align-items: center;
   padding: 16rpx 24rpx;
-  background: #F5F5F5;
-  border-radius: 8rpx;
+  background: #FAF7F2;
+  border-radius: 12rpx;
   font-size: 28rpx;
-  color: #333333;
+  color: #2D3436;
 }
 
 .filter-icon {
   margin-left: 8rpx;
   font-size: 20rpx;
-  color: #999999;
+  color: #9BA4A9;
 }
 
 .filter-tags {
@@ -214,15 +215,15 @@ onMounted(() => {
 
 .tag {
   padding: 8rpx 16rpx;
-  background: #E3F2FD;
-  border-radius: 6rpx;
+  background: #E7F2EA;
+  border-radius: 10rpx;
   font-size: 24rpx;
-  color: #007AFF;
+  color: #7D9E87;
 }
 
 .clear-btn {
   font-size: 24rpx;
-  color: #999999;
+  color: #9BA4A9;
 }
 
 .violation-scroll {
@@ -237,13 +238,13 @@ onMounted(() => {
 
 .empty-text {
   font-size: 28rpx;
-  color: #999999;
+  color: #9BA4A9;
 }
 
 .load-more {
   padding: 32rpx;
   text-align: center;
   font-size: 26rpx;
-  color: #999999;
+  color: #9BA4A9;
 }
 </style>

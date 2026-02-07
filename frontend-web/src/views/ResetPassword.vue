@@ -98,27 +98,30 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #4f8cff 0%, #ffb6c1 100%);
+  background: #FAF7F2;
 }
 
 .login-box {
-  background-color: white;
-  padding: 24px;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
-  width: 360px;
+  background-color: #FFFFFF;
+  padding: 40px;
+  border-radius: 20px;
+  box-shadow: 0 4px 24px rgba(45, 52, 54, 0.06);
+  width: 400px;
 }
 
 .login-title {
   font-size: 24px;
-  font-weight: bold;
-  margin-bottom: 12px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #2D3436;
+  text-align: center;
 }
 
 .login-subtitle {
   font-size: 14px;
-  color: #606266;
-  margin-bottom: 24px;
+  color: #636E72;
+  margin-bottom: 32px;
+  text-align: center;
 }
 
 .login-form {
@@ -128,7 +131,7 @@ export default {
 .verify-code-container {
   display: flex;
   gap: 12px;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .verify-code-container .el-input {
@@ -137,43 +140,74 @@ export default {
 
 .verify-code-btn {
   width: 120px;
-  background-color: #8ca5ff;
+  background: linear-gradient(135deg, #7D9E87 0%, #6B9AC4 100%);
   border: none;
   color: white;
+  border-radius: 10px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .verify-code-btn:hover {
-  background-color: #7088ff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(107, 154, 196, 0.35);
 }
 
 .login-btn {
   width: 100%;
-  background-color: #8ca5ff;
+  height: 48px;
+  font-size: 16px;
+  font-weight: 500;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #7D9E87 0%, #6B9AC4 100%);
   border: none;
   color: white;
-  padding: 12px;
-  font-size: 16px;
-  font-weight: bold;
-  border-radius: 4px;
   cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .login-btn:hover {
-  background-color: #7088ff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(107, 154, 196, 0.35);
 }
 
 .register-link {
   text-align: center;
   font-size: 14px;
-  color: #606266;
+  color: #636E72;
 }
 
 .register-link a {
-  color: #8ca5ff;
+  color: #6B9AC4;
   text-decoration: none;
+  font-weight: 500;
 }
 
 .register-link a:hover {
   text-decoration: underline;
+}
+
+:deep(.el-input .el-input__wrapper) {
+  border-radius: 10px;
+  background-color: #FAF7F2;
+  border: 1px solid #E8E4DE;
+  box-shadow: none !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+:deep(.el-input .el-input__wrapper:hover) {
+  border-color: #6B9AC4;
+}
+
+:deep(.el-input .el-input__wrapper.is-focus) {
+  border-color: #6B9AC4;
+  box-shadow: 0 0 0 3px rgba(107, 154, 196, 0.15) !important;
+}
+
+:deep(.el-input .el-input__inner) {
+  height: 48px;
+  font-size: 15px;
+  color: #2D3436;
 }
 </style> 

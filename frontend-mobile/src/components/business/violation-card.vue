@@ -80,8 +80,8 @@ function handleClick() {
   display: flex;
   align-items: stretch;
   background: #FFFFFF;
-  border-radius: 16rpx;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
+  border-radius: 24rpx;
+  box-shadow: 0 4rpx 16rpx rgba(45, 52, 54, 0.06);
   margin-bottom: 24rpx;
   overflow: hidden;
   position: relative;
@@ -93,16 +93,16 @@ function handleClick() {
   right: 0;
   padding: 8rpx 20rpx;
   font-size: 22rpx;
-  border-radius: 0 16rpx 0 16rpx;
+  border-radius: 0 24rpx 0 16rpx;
   
   &.status-pending {
-    background: #FFF3E0;
-    color: #FF9500;
+    background: #FDF3E7;
+    color: #D4A574;
   }
   
   &.status-processed {
-    background: #E8F5E9;
-    color: #4CD964;
+    background: #E7F2EA;
+    color: #7D9E87;
   }
 }
 
@@ -121,12 +121,12 @@ function handleClick() {
 .violation-type {
   font-size: 32rpx;
   font-weight: 600;
-  color: #333333;
+  color: #2D3436;
 }
 
 .violation-time {
   font-size: 24rpx;
-  color: #999999;
+  color: #9BA4A9;
 }
 
 .card-body {
@@ -135,7 +135,7 @@ function handleClick() {
 
 .violation-desc {
   font-size: 28rpx;
-  color: #666666;
+  color: #636E72;
   line-height: 1.5;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -156,12 +156,12 @@ function handleClick() {
 
 .info-label {
   font-size: 24rpx;
-  color: #999999;
+  color: #9BA4A9;
 }
 
 .info-value {
   font-size: 24rpx;
-  color: #666666;
+  color: #636E72;
 }
 
 .card-arrow {
@@ -172,6 +172,6 @@ function handleClick() {
 
 .arrow-icon {
   font-size: 40rpx;
-  color: #CCCCCC;
+  color: #9BA4A9;
 }
 </style>

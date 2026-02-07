@@ -141,6 +141,7 @@
 import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue';
 import * as echarts from 'echarts';
 import mapJson from '@/assets/cumt_nanhu.json';
+import { getScreenStats } from '@/api/screen';
 
 // --- 地图引用 ---
 const mapChartRef = ref(null);
@@ -154,11 +155,11 @@ const pieChartRef = ref(null);
 const lineChartRef = ref(null);
 const barChartRef = ref(null);
 
-// 模拟核心指标
-const todayViolations = ref(127);
-const totalViolations = ref(3452);
-const processingRate = ref(98.5);
-const onlineDevices = ref(42);
+// 核心指标 - 从后端获取
+const todayViolations = ref(0);
+const totalViolations = ref(0);
+const processingRate = ref(0);
+const onlineDevices = ref(0);
 
 // 模拟地图点位 (坐标基于中国矿业大学南湖校区范围)
 const violationPoints = ref([
@@ -181,6 +182,57 @@ const recentViolations = ref([
   { id: 7, time: '2023-10-27 14:12:05', type: 'parking', typeName: '违停', location: '行政楼后', status: 'completed', statusName: '已处理' },
   { id: 8, time: '2023-10-27 14:09:55', type: 'speeding', typeName: '超速', location: '体育馆西侧', status: 'pending', statusName: '待处理' },
 ]);
+
+// 图表数据 - 从后端获取
+const typeDistribution = ref([]);
+const dailyTrend = ref([]);
+const areaRanking = ref([]);
+
+// 从后端获取大屏统计数据
+async function fetchScreenStats() {
+  try {
+    const data = await getScreenStats();
+    
+    // 更新核心指标
+    if (data.todayViolations !== undefined) {
+      todayViolations.value = data.todayViolations;
+    }
+    if (data.totalViolations !== undefined) {
+      totalViolations.value = data.totalViolations;
+    }
+    if (data.processingRate !== undefined) {
+      processingRate.value = data.processingRate;
+    }
+    if (data.onlineDevices !== undefined) {
+      onlineDevices.value = data.onlineDevices;
+    }
+    
+    // 更新图表数据
+    if (data.typeDistribution) {
+      typeDistribution.value = data.typeDistribution;
+    }
+    if (data.dailyTrend) {
+      dailyTrend.value = data.dailyTrend;
+    }
+    if (data.areaRanking) {
+      areaRanking.value = data.areaRanking;
+    }
+    if (data.recentViolations) {
+      recentViolations.value = data.recentViolations;
+    }
+    if (data.violationPoints) {
+      violationPoints.value = data.violationPoints;
+    }
+    
+  } catch (error) {
+    console.error('获取大屏统计数据失败:', error);
+    // 使用默认模拟数据
+    todayViolations.value = 127;
+    totalViolations.value = 3452;
+    processingRate.value = 98.5;
+    onlineDevices.value = 42;
+  }
+}
 
 // --- 工具函数 ---
 const getTypeColor = (type) => {
@@ -441,23 +493,23 @@ const updateTime = () => {
   const timeStr = now.toLocaleTimeString('zh-CN', { hour12: false });
   currentDate.value = dateStr;
   currentTime.value = timeStr;
-  
-  // 随机模拟实时数据变化
-  if (Math.random() > 0.7) {
-    todayViolations.value += Math.floor(Math.random() * 3);
-    totalViolations.value += Math.floor(Math.random() * 3);
-  }
 };
 
-onMounted(() => {
+onMounted(async () => {
   updateTime();
   timer = setInterval(updateTime, 1000);
+  
+  // 获取后端数据
+  await fetchScreenStats();
   
   nextTick(() => {
     initCharts();
     handleResize();
     window.addEventListener('resize', handleResize);
   });
+  
+  // 每30秒刷新一次大屏数据
+  setInterval(fetchScreenStats, 30000);
 });
 
 onUnmounted(() => {
@@ -541,6 +593,7 @@ onUnmounted(() => {
   margin: 0;
   background: linear-gradient(to bottom, #fff, #a5f3fc);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   text-shadow: 0 0 20px rgba(6, 182, 212, 0.5);
   letter-spacing: 2px;

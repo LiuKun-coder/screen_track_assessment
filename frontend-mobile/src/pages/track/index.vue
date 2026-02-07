@@ -118,7 +118,7 @@ onMounted(() => {
 <style lang="scss" scoped>
 .track-page {
   min-height: 100vh;
-  background: #F5F5F5;
+  background: #FAF7F2;
   padding: 24rpx 32rpx;
   padding-bottom: calc(120rpx + env(safe-area-inset-bottom));
 }
@@ -133,18 +133,19 @@ onMounted(() => {
   flex: 1;
   height: 88rpx;
   background: #FFFFFF;
-  border-radius: 12rpx;
+  border-radius: 20rpx;
   padding: 0 24rpx;
-  font-size: 32rpx;
+  font-size: 30rpx;
+  box-shadow: 0 2rpx 8rpx rgba(45, 52, 54, 0.04);
 }
 
 .search-btn {
   width: 160rpx;
   height: 88rpx;
-  background: linear-gradient(135deg, #007AFF 0%, #5AC8FA 100%);
-  border-radius: 12rpx;
+  background: linear-gradient(135deg, #7D9E87 0%, #6B9AC4 100%);
+  border-radius: 20rpx;
   color: #FFFFFF;
-  font-size: 32rpx;
+  font-size: 30rpx;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -160,11 +161,12 @@ onMounted(() => {
 .action-item {
   flex: 1;
   background: #FFFFFF;
-  border-radius: 16rpx;
+  border-radius: 24rpx;
   padding: 32rpx;
   display: flex;
   flex-direction: column;
   align-items: center;
+  box-shadow: 0 4rpx 16rpx rgba(45, 52, 54, 0.06);
 }
 
 .action-icon {
@@ -174,13 +176,14 @@ onMounted(() => {
 
 .action-text {
   font-size: 28rpx;
-  color: #333333;
+  color: #2D3436;
 }
 
 .history-section {
   background: #FFFFFF;
-  border-radius: 16rpx;
+  border-radius: 24rpx;
   padding: 32rpx;
+  box-shadow: 0 4rpx 16rpx rgba(45, 52, 54, 0.06);
 }
 
 .section-header {
@@ -193,12 +196,12 @@ onMounted(() => {
 .section-title {
   font-size: 32rpx;
   font-weight: 600;
-  color: #333333;
+  color: #2D3436;
 }
 
 .section-action {
   font-size: 26rpx;
-  color: #999999;
+  color: #9BA4A9;
 }
 
 .history-item {
@@ -206,7 +209,7 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 20rpx 0;
-  border-bottom: 1rpx solid #F0F0F0;
+  border-bottom: 1rpx solid #E8E4DE;
   
   &:last-child {
     border-bottom: none;
@@ -215,12 +218,12 @@ onMounted(() => {
 
 .history-value {
   font-size: 28rpx;
-  color: #333333;
+  color: #2D3436;
 }
 
 .history-time {
   font-size: 24rpx;
-  color: #999999;
+  color: #9BA4A9;
 }
 
 .empty-state {
@@ -230,6 +233,6 @@ onMounted(() => {
 
 .empty-text {
   font-size: 28rpx;
-  color: #999999;
+  color: #9BA4A9;
 }
 </style>

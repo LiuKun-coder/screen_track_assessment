@@ -77,6 +77,7 @@ import { ref, reactive } from 'vue'
 import { User, Lock } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { login } from '@/api/auth'
 
 export default {
   name: 'LoginView',
@@ -96,20 +97,6 @@ export default {
       remember: false
     })
     
-    // 测试账号配置
-    const testAccounts = {
-      'liukun': {
-        password: '123456',
-        role: 'admin',
-        name: '管理员'
-      },
-      'kunliu': {
-        password: '123456',
-        role: 'user',
-        name: '普通用户'
-      }
-    }
-    
     const handleLogin = async () => {
       if (!loginForm.username || !loginForm.password) {
         ElMessage.error('请输入用户名和密码')
@@ -119,43 +106,29 @@ export default {
       loginLoading.value = true
       
       try {
-        // 模拟登录请求延迟
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        
-        // 验证测试账号
-        const account = testAccounts[loginForm.username]
-        if (!account) {
-          ElMessage.error('用户名不存在')
-          return
-        }
-        
-        if (account.password !== loginForm.password) {
-          ElMessage.error('密码错误')
-          return
-        }
-        
-        // 登录成功，保存用户信息
-        const userInfo = {
+        // 调用后端登录API
+        const result = await login({
           username: loginForm.username,
-          role: account.role,
-          name: account.name,
-          loginTime: new Date().toISOString()
-        }
+          password: loginForm.password
+        })
         
-        localStorage.setItem('userInfo', JSON.stringify(userInfo))
+        // 保存token和用户信息
+        localStorage.setItem('token', result.token)
+        localStorage.setItem('userInfo', JSON.stringify(result.userInfo))
         localStorage.setItem('isLoggedIn', 'true')
         
         if (loginForm.remember) {
           localStorage.setItem('rememberedUser', loginForm.username)
         }
         
-        ElMessage.success(`欢迎回来，${account.name}！`)
+        ElMessage.success(`欢迎回来，${result.userInfo.name}！`)
         
         // 跳转到主页
         router.push('/home')
         
       } catch (error) {
-        ElMessage.error('登录失败，请重试')
+        console.error('登录失败:', error)
+        // 错误已在request拦截器中处理
       } finally {
         loginLoading.value = false
       }
@@ -184,31 +157,34 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #4f8cff 0%, #ffb6c1 100%);
+  background: #FAF7F2;
 }
 
 .login-box {
-  background-color: #fff;
-  padding: 20px;
-  border-radius: 4px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background-color: #FFFFFF;
+  padding: 40px;
+  border-radius: 20px;
+  box-shadow: 0 4px 24px rgba(45, 52, 54, 0.06);
   width: 400px;
 }
 
 .login-title {
   font-size: 24px;
-  font-weight: 700;
-  margin-bottom: 10px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #2D3436;
+  text-align: center;
 }
 
 .login-subtitle {
   font-size: 14px;
-  color: #606266;
-  margin-bottom: 20px;
+  color: #636E72;
+  margin-bottom: 32px;
+  text-align: center;
 }
 
 .tab-container {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .login-form {
@@ -216,23 +192,41 @@ export default {
 }
 
 .login-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 20px;
 }
 
 .login-btn {
   width: 100%;
+  height: 48px;
+  font-size: 16px;
+  font-weight: 500;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #7D9E87 0%, #6B9AC4 100%);
+  border: none;
+  color: white;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.login-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(107, 154, 196, 0.35);
 }
 
 .qrcode-container {
   text-align: center;
+  padding: 40px 0;
 }
 
 .qrcode-box {
-  width: 120px;
-  height: 120px;
-  margin: 0 auto 10px;
-  background-color: #f0f0f0;
-  border-radius: 4px;
+  width: 180px;
+  height: 180px;
+  margin: 0 auto 20px;
+  background-color: #FAF7F2;
+  border-radius: 12px;
+  border: 1px solid #E8E4DE;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -240,13 +234,13 @@ export default {
 
 .qrcode-tip {
   font-size: 14px;
-  color: #606266;
+  color: #636E72;
 }
 
 .test-accounts {
-  background: #f8fafc;
-  border: 1px solid #e0e7ff;
-  border-radius: 8px;
+  background: #FFFCF8;
+  border: 1px solid #E8E4DE;
+  border-radius: 12px;
   padding: 16px;
   margin-bottom: 20px;
 }
@@ -254,8 +248,8 @@ export default {
 .test-accounts h4 {
   margin: 0 0 12px 0;
   font-size: 14px;
-  color: #4f8cff;
-  font-weight: bold;
+  color: #7D9E87;
+  font-weight: 600;
 }
 
 .account-info {
@@ -273,17 +267,93 @@ export default {
 
 .account-label {
   font-weight: 500;
-  color: #333;
+  color: #2D3436;
   min-width: 70px;
 }
 
 .account-item span:not(.account-label) {
-  color: #666;
+  color: #636E72;
   flex: 1;
 }
 
 .register-link {
   text-align: center;
-  margin-top: 20px;
+  margin-top: 24px;
+  font-size: 14px;
+  color: #636E72;
+}
+
+.register-link a {
+  color: #C9735D;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.register-link a:hover {
+  text-decoration: underline;
+}
+
+:deep(.el-input .el-input__wrapper) {
+  border-radius: 10px;
+  background-color: #FAF7F2;
+  border: 1px solid #E8E4DE;
+  box-shadow: none !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+:deep(.el-input .el-input__wrapper:hover) {
+  border-color: #6B9AC4;
+}
+
+:deep(.el-input .el-input__wrapper.is-focus) {
+  border-color: #6B9AC4;
+  box-shadow: 0 0 0 3px rgba(107, 154, 196, 0.15) !important;
+}
+
+:deep(.el-input .el-input__inner) {
+  height: 48px;
+  font-size: 15px;
+  color: #2D3436;
+}
+
+:deep(.el-input .el-input__inner::placeholder) {
+  color: #9BA4A9;
+}
+
+:deep(.el-tabs__nav-wrap::after) {
+  height: 1px;
+  background-color: #E8E4DE;
+}
+
+:deep(.el-tabs__active-bar) {
+  height: 2px;
+  background: linear-gradient(90deg, #7D9E87 0%, #6B9AC4 100%);
+}
+
+:deep(.el-tabs__item) {
+  font-size: 15px;
+  color: #636E72;
+}
+
+:deep(.el-tabs__item.is-active) {
+  color: #2D3436;
+  font-weight: 500;
+}
+
+:deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
+  background-color: #7D9E87;
+  border-color: #7D9E87;
+}
+
+:deep(.el-button--small) {
+  background: linear-gradient(135deg, #7D9E87 0%, #6B9AC4 100%);
+  border: none;
+  color: white;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+:deep(.el-button--small:hover) {
+  opacity: 0.9;
 }
 </style> 

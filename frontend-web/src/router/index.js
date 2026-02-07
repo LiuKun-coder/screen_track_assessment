@@ -35,4 +35,24 @@ const router = createRouter({
   routes
 })
 
-export default router 
+// 路由守卫
+router.beforeEach((to, from, next) => {
+  const token = localStorage.getItem('token')
+  const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
+
+  // 需要登录的页面
+  if (to.meta.requiresAuth && !token) {
+    next('/')
+    return
+  }
+
+  // 需要管理员权限的页面
+  if (to.meta.requiresAdmin && userInfo.role !== 'admin') {
+    next('/home')
+    return
+  }
+
+  next()
+})
+
+export default router

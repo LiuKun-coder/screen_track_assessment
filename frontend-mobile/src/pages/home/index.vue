@@ -181,14 +181,14 @@ onMounted(() => {
 <style lang="scss" scoped>
 .home-page {
   min-height: 100vh;
-  background: #F5F5F5;
+  background: #FAF7F2;
   padding-bottom: calc(120rpx + env(safe-area-inset-bottom));
 }
 
 .header-bg {
-  background: linear-gradient(135deg, #007AFF 0%, #5AC8FA 100%);
+  background: linear-gradient(135deg, #7D9E87 0%, #6B9AC4 100%);
   padding: 60rpx 32rpx 100rpx;
-  border-radius: 0 0 40rpx 40rpx;
+  border-radius: 0 0 48rpx 48rpx;
 }
 
 .header-content {
@@ -206,7 +206,7 @@ onMounted(() => {
   width: 100rpx;
   height: 100rpx;
   border-radius: 50%;
-  border: 4rpx solid rgba(255, 255, 255, 0.5);
+  border: 4rpx solid rgba(255, 255, 255, 0.4);
   margin-right: 20rpx;
 }
 
@@ -217,7 +217,7 @@ onMounted(() => {
 
 .greeting {
   font-size: 26rpx;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.85);
   margin-bottom: 4rpx;
 }
 
@@ -231,9 +231,9 @@ onMounted(() => {
   display: flex;
   background: #FFFFFF;
   margin: -60rpx 32rpx 24rpx;
-  border-radius: 20rpx;
+  border-radius: 24rpx;
   padding: 32rpx;
-  box-shadow: 0 8rpx 30rpx rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8rpx 24rpx rgba(45, 52, 54, 0.08);
 }
 
 .stat-item {
@@ -246,35 +246,36 @@ onMounted(() => {
 .stat-value {
   font-size: 48rpx;
   font-weight: 700;
-  color: #333333;
+  color: #2D3436;
   margin-bottom: 8rpx;
   
   &.text-warning {
-    color: #FF9500;
+    color: #D4A574;
   }
 }
 
 .stat-label {
   font-size: 24rpx;
-  color: #999999;
+  color: #9BA4A9;
 }
 
 .stat-divider {
   width: 1rpx;
-  background: #E5E5E5;
+  background: #E8E4DE;
 }
 
 .quick-entry {
   background: #FFFFFF;
   margin: 0 32rpx 24rpx;
-  border-radius: 20rpx;
+  border-radius: 24rpx;
   padding: 32rpx;
+  box-shadow: 0 4rpx 16rpx rgba(45, 52, 54, 0.06);
 }
 
 .entry-title {
   font-size: 32rpx;
   font-weight: 600;
-  color: #333333;
+  color: #2D3436;
   margin-bottom: 24rpx;
 }
 
@@ -293,7 +294,7 @@ onMounted(() => {
 .entry-icon {
   width: 96rpx;
   height: 96rpx;
-  border-radius: 20rpx;
+  border-radius: 24rpx;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -301,25 +302,25 @@ onMounted(() => {
   margin-bottom: 12rpx;
   
   &.violation {
-    background: #E3F2FD;
+    background: #FDEAE9;
   }
   
   &.my {
-    background: #FFF3E0;
+    background: #FDF3E7;
   }
   
   &.track {
-    background: #E8F5E9;
+    background: #E7F2EA;
   }
   
   &.fence {
-    background: #FCE4EC;
+    background: #E9F3FC;
   }
 }
 
 .entry-text {
   font-size: 24rpx;
-  color: #666666;
+  color: #636E72;
 }
 
 .latest-section {
@@ -336,23 +337,24 @@ onMounted(() => {
 .section-title {
   font-size: 32rpx;
   font-weight: 600;
-  color: #333333;
+  color: #2D3436;
 }
 
 .section-more {
   font-size: 26rpx;
-  color: #007AFF;
+  color: #6B9AC4;
 }
 
 .empty-state {
   background: #FFFFFF;
-  border-radius: 16rpx;
+  border-radius: 24rpx;
   padding: 60rpx;
   text-align: center;
+  box-shadow: 0 4rpx 16rpx rgba(45, 52, 54, 0.06);
 }
 
 .empty-text {
   font-size: 28rpx;
-  color: #999999;
+  color: #9BA4A9;
 }
 </style>

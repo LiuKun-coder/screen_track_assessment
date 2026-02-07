@@ -250,7 +250,7 @@ function goToResetPassword() {
 <style lang="scss" scoped>
 .login-page {
   min-height: 100vh;
-  background: linear-gradient(180deg, #E3F2FD 0%, #F5F5F5 100%);
+  background: #FAF7F2;
   padding: 0 48rpx;
   display: flex;
   flex-direction: column;
@@ -272,20 +272,20 @@ function goToResetPassword() {
 .app-name {
   font-size: 40rpx;
   font-weight: 600;
-  color: #333333;
+  color: #2D3436;
   margin-bottom: 12rpx;
 }
 
 .app-desc {
   font-size: 26rpx;
-  color: #666666;
+  color: #636E72;
 }
 
 .login-form {
   background: #FFFFFF;
-  border-radius: 24rpx;
-  padding: 40rpx 32rpx;
-  box-shadow: 0 8rpx 40rpx rgba(0, 0, 0, 0.08);
+  border-radius: 32rpx;
+  padding: 48rpx 32rpx;
+  box-shadow: 0 8rpx 32rpx rgba(45, 52, 54, 0.08);
 }
 
 .login-tabs {
@@ -297,14 +297,14 @@ function goToResetPassword() {
   flex: 1;
   text-align: center;
   font-size: 30rpx;
-  color: #666666;
+  color: #9BA4A9;
   padding-bottom: 20rpx;
   border-bottom: 4rpx solid transparent;
   
   &.active {
-    color: #007AFF;
+    color: #7D9E87;
     font-weight: 500;
-    border-bottom-color: #007AFF;
+    border-bottom-color: #7D9E87;
   }
 }
 
@@ -316,14 +316,16 @@ function goToResetPassword() {
 .input {
   width: 100%;
   height: 96rpx;
-  border: 2rpx solid #E5E5E5;
-  border-radius: 12rpx;
+  border: 2rpx solid #E8E4DE;
+  border-radius: 20rpx;
   padding: 0 24rpx;
-  font-size: 32rpx;
+  font-size: 30rpx;
   box-sizing: border-box;
+  background: #FAF7F2;
   
   &:focus {
-    border-color: #007AFF;
+    border-color: #6B9AC4;
+    background: #FFFFFF;
   }
 }
 
@@ -345,10 +347,10 @@ function goToResetPassword() {
   top: 50%;
   transform: translateY(-50%);
   font-size: 26rpx;
-  color: #007AFF;
+  color: #6B9AC4;
   
   &.disabled {
-    color: #999999;
+    color: #9BA4A9;
   }
 }
 
@@ -365,13 +367,13 @@ function goToResetPassword() {
   .line {
     width: 80rpx;
     height: 1rpx;
-    background: #E5E5E5;
+    background: #E8E4DE;
   }
   
   .text {
     margin: 0 24rpx;
     font-size: 26rpx;
-    color: #999999;
+    color: #9BA4A9;
   }
 }
 
@@ -379,7 +381,7 @@ function goToResetPassword() {
   width: 100%;
   height: 88rpx;
   background: #07C160;
-  border-radius: 12rpx;
+  border-radius: 20rpx;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -403,11 +405,11 @@ function goToResetPassword() {
 
 .link {
   font-size: 28rpx;
-  color: #007AFF;
+  color: #6B9AC4;
 }
 
 .separator {
   margin: 0 24rpx;
-  color: #E5E5E5;
+  color: #E8E4DE;
 }
 </style>

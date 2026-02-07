@@ -219,7 +219,10 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { getTrackByDate } from '@/api/track'
+import { getFenceList, addFence, updateFence } from '@/api/fence'
+import { ElMessage } from 'element-plus'
 
 // Props 接收违规信息和用户角色
 const props = defineProps({
@@ -242,6 +245,13 @@ const showUserTrackDialog = ref(false)
 const mapData = ref('学校地图加载中...')
 const currentViolationInfo = ref(props.violationInfo)
 const userRole = ref(props.userRole)
+const loading = ref(false)
+
+// 当前轨迹数据
+const trackPoints = ref([])
+
+// 电子围栏数据
+const currentFence = ref(null)
 
 // 用户轨迹查看相关数据
 const userSearchKeyword = ref('')
@@ -272,6 +282,50 @@ const filteredUsers = ref([])
 const fenceName = ref('主校区安全围栏')
 const fenceRange = ref('东门-西门-南门-北门')
 const fenceStatus = ref('启用')
+const fenceId = ref(null)
+
+// 获取电子围栏列表
+async function fetchFenceList() {
+  try {
+    const result = await getFenceList({ page: 1, pageSize: 1 })
+    if (result.records && result.records.length > 0) {
+      const fence = result.records[0]
+      currentFence.value = fence
+      fenceId.value = fence.id
+      fenceName.value = fence.name
+      fenceRange.value = fence.description || '东门-西门-南门-北门'
+      fenceStatus.value = fence.status === 'active' ? '启用' : '禁用'
+    }
+  } catch (error) {
+    console.error('获取电子围栏失败:', error)
+  }
+}
+
+// 从后端获取轨迹数据
+async function fetchTrackByDate(date) {
+  loading.value = true
+  try {
+    const result = await getTrackByDate({ date })
+    if (result && result.trackPoints) {
+      // 解析JSON轨迹点
+      try {
+        trackPoints.value = JSON.parse(result.trackPoints)
+      } catch (e) {
+        trackPoints.value = []
+      }
+      mapData.value = `正在显示 ${date} 的路线回溯轨迹（共 ${trackPoints.value.length} 个轨迹点）`
+    } else {
+      mapData.value = `${date} 没有轨迹数据`
+      trackPoints.value = []
+    }
+  } catch (error) {
+    console.error('获取轨迹数据失败:', error)
+    mapData.value = `正在显示 ${date} 的路线回溯轨迹`
+    trackPoints.value = []
+  } finally {
+    loading.value = false
+  }
+}
 
 // 监听 props 变化
 import { watch } from 'vue'
@@ -280,6 +334,8 @@ watch(() => props.violationInfo, (newInfo) => {
   if (newInfo) {
     selectedDate.value = newInfo.time.split(' ')[0]
     mapData.value = `正在显示 ${newInfo.time} 在 ${newInfo.detail} 的违规轨迹回溯`
+    // 尝试从后端获取轨迹
+    fetchTrackByDate(selectedDate.value)
   }
 }, { immediate: true })
 
@@ -294,7 +350,7 @@ function openDatePicker() {
 function selectDate() {
   showDatePicker.value = false
   if (selectedDate.value) {
-    mapData.value = `正在显示 ${selectedDate.value} 的路线回溯轨迹`
+    fetchTrackByDate(selectedDate.value)
   }
 }
 
@@ -319,10 +375,27 @@ function clearViolationInfo() {
   mapData.value = '学校地图加载中...'
 }
 
-function saveFence() {
-  // 保存围栏功能待实现
-  alert('保存围栏功能待实现')
-  closeEditFenceDialog()
+// 保存电子围栏
+async function saveFence() {
+  try {
+    const fenceData = {
+      name: fenceName.value,
+      description: fenceRange.value,
+      status: fenceStatus.value === '启用' ? 'active' : 'inactive'
+    }
+    
+    if (fenceId.value) {
+      await updateFence(fenceId.value, fenceData)
+    } else {
+      await addFence(fenceData)
+    }
+    
+    ElMessage.success('保存成功')
+    closeEditFenceDialog()
+    fetchFenceList()
+  } catch (error) {
+    console.error('保存围栏失败:', error)
+  }
 }
 
 // 用户轨迹查看相关函数
@@ -368,7 +441,7 @@ function clearUserSelection() {
 
 function viewUserTrack() {
   if (!selectedUser.value || !userTrackDate.value) {
-    alert('请选择用户和日期')
+    ElMessage.warning('请选择用户和日期')
     return
   }
   
@@ -381,20 +454,25 @@ function viewUserTrack() {
   // 清空违规信息面板
   currentViolationInfo.value = null
 }
+
+// 组件加载时获取电子围栏
+onMounted(() => {
+  fetchFenceList()
+})
 </script>
 
 <style scoped>
 .track-container {
   display: flex;
   height: 100%;
-  gap: 32px;
+  gap: 24px;
 }
 
 .track-left {
   display: flex;
   flex-direction: column;
-  gap: 32px;
-  width: 320px;
+  gap: 16px;
+  width: 280px;
   margin-top: 24px;
 }
 
@@ -406,45 +484,39 @@ function viewUserTrack() {
 }
 
 .track-btn {
-  background: linear-gradient(90deg, #f0f5ff 0%, #fff 100%);
-  border: 2.5px solid #e0e7ff;
-  border-radius: 20px;
-  padding: 28px 20px;
-  font-size: 20px;
-  font-weight: 600;
+  background: #FFFFFF;
+  border: 1px solid #E8E4DE;
+  border-radius: 12px;
+  padding: 20px 18px;
+  font-size: 15px;
+  font-weight: 500;
   cursor: pointer;
-  margin-bottom: 0;
-  box-shadow: 0 4px 24px 0 #4f8cff11, 0 1.5px 6px 0 #ffb6c122;
-  transition: background 0.25s, color 0.25s, box-shadow 0.25s, transform 0.18s, border 0.25s;
+  box-shadow: 0 2px 8px rgba(45, 52, 54, 0.04);
+  transition: all 0.2s ease;
   text-align: left;
-  color: #4f8cff;
-  letter-spacing: 1px;
-  position: relative;
-  overflow: hidden;
+  color: #2D3436;
 }
 
 .track-btn:hover {
-  background: linear-gradient(90deg, #4f8cff 0%, #7c3aed 100%);
-  color: #fff;
-  box-shadow: 0 8px 32px 0 #4f8cff33, 0 2px 8px 0 #ffb6c133;
-  border: 2.5px solid #7c3aed;
-  transform: translateY(-3px) scale(1.03);
+  background: linear-gradient(135deg, #7D9E87 0%, #6B9AC4 100%);
+  color: #FFFFFF;
+  border-color: transparent;
+  box-shadow: 0 4px 16px rgba(107, 154, 196, 0.25);
+  transform: translateY(-2px);
 }
 
 .violation-info-panel {
-  background: linear-gradient(90deg, #f0f5ff 0%, #fff 100%);
-  border-radius: 20px;
-  border: 2.5px solid #e0e7ff;
-  box-shadow: 0 4px 24px 0 #4f8cff11, 0 1.5px 6px 0 #ffb6c122;
-  padding: 20px 28px;
-  transition: box-shadow 0.25s, border 0.25s;
-  position: relative;
-  overflow: hidden;
+  background: #FFFFFF;
+  border-radius: 16px;
+  border: 1px solid #E8E4DE;
+  box-shadow: 0 2px 12px rgba(45, 52, 54, 0.06);
+  padding: 20px 24px;
+  transition: all 0.2s ease;
 }
 
 .violation-info-panel:hover {
-  box-shadow: 0 8px 32px 0 #4f8cff22, 0 2px 8px 0 #ffb6c133;
-  border: 2.5px solid #7c3aed;
+  box-shadow: 0 4px 20px rgba(45, 52, 54, 0.08);
+  border-color: #6B9AC4;
 }
 
 .panel-header {
@@ -453,73 +525,71 @@ function viewUserTrack() {
   align-items: center;
   margin-bottom: 16px;
   padding-bottom: 12px;
-  border-bottom: 1px solid #e0e7ff;
+  border-bottom: 1px solid #E8E4DE;
 }
 
 .panel-title {
-  font-size: 20px;
-  font-weight: bold;
-  color: #4f8cff;
-  letter-spacing: 1px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #2D3436;
 }
 
 .close-panel-btn {
-  background: #fff;
-  border: 2px solid #ff4f4f;
+  background: #FFFFFF;
+  border: 1px solid #C9735D;
   border-radius: 50%;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
-  font-weight: bold;
-  color: #ff4f4f;
+  font-size: 16px;
+  font-weight: 600;
+  color: #C9735D;
   cursor: pointer;
-  transition: background 0.22s, color 0.22s, transform 0.18s;
+  transition: all 0.2s ease;
 }
 
 .close-panel-btn:hover {
-  background: #ff4f4f;
-  color: #fff;
-  transform: scale(1.1);
+  background: #C9735D;
+  color: #FFFFFF;
 }
 
 .panel-content {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 16px 24px;
+  gap: 12px 20px;
 }
 
 .info-item {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .info-label {
-  font-size: 14px;
-  color: #7c3aed;
-  font-weight: bold;
+  font-size: 13px;
+  color: #7D9E87;
+  font-weight: 600;
 }
 
 .info-value {
-  font-size: 16px;
-  color: #333;
+  font-size: 15px;
+  color: #2D3436;
   font-weight: 500;
 }
 
 .info-value.violation-type {
-  color: #ff4f4f;
-  font-weight: bold;
+  color: #C9735D;
+  font-weight: 600;
 }
 
 .info-value.highlight {
-  color: #4f8cff;
-  font-weight: bold;
-  background: #e0e7ff;
-  border-radius: 8px;
-  padding: 4px 12px;
+  color: #6B9AC4;
+  font-weight: 600;
+  background: #E9F3FC;
+  border-radius: 6px;
+  padding: 4px 10px;
   display: inline-block;
 }
 
@@ -534,36 +604,33 @@ function viewUserTrack() {
   width: 100%;
   height: 100%;
   min-height: 360px;
-  background: linear-gradient(135deg, #f0f5ff 0%, #fff 100%);
-  border-radius: 32px;
-  border: 2.5px solid #e0e7ff;
+  background: #FFFCF8;
+  border-radius: 20px;
+  border: 1px solid #E8E4DE;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: 28px;
-  color: #4f8cff;
+  font-size: 22px;
+  color: #2D3436;
   text-align: center;
-  box-shadow: 0 4px 24px 0 #4f8cff11, 0 1.5px 6px 0 #ffb6c122;
-  transition: box-shadow 0.25s, border 0.25s;
-  position: relative;
-  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(45, 52, 54, 0.06);
+  transition: all 0.2s ease;
 }
 
 .track-map-placeholder:hover {
-  box-shadow: 0 8px 32px 0 #4f8cff22, 0 2px 8px 0 #ffb6c133;
-  border: 2.5px solid #7c3aed;
+  box-shadow: 0 4px 20px rgba(45, 52, 54, 0.08);
+  border-color: #6B9AC4;
 }
 
 .map-title {
-  font-weight: bold;
+  font-weight: 600;
   margin-bottom: 16px;
-  letter-spacing: 2px;
 }
 
 .map-content {
-  font-size: 18px;
-  color: #7c3aed;
+  font-size: 16px;
+  color: #7D9E87;
   font-weight: 500;
 }
 
@@ -571,7 +638,7 @@ function viewUserTrack() {
 .track-dialog-mask {
   position: fixed;
   left: 0; top: 0; right: 0; bottom: 0;
-  background: rgba(79,140,255,0.12);
+  background: rgba(45, 52, 54, 0.15);
   z-index: 1000;
   display: flex;
   align-items: center;
@@ -579,22 +646,22 @@ function viewUserTrack() {
 }
 
 .track-dialog {
-  background: #fff;
-  border-radius: 24px;
-  box-shadow: 0 8px 40px 0 #4f8cff33;
-  padding: 36px 48px 28px 48px;
+  background: #FFFFFF;
+  border-radius: 20px;
+  box-shadow: 0 8px 40px rgba(45, 52, 54, 0.15);
+  padding: 32px 40px;
   min-width: 400px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  position: relative;
+  gap: 16px;
 }
 
 .track-dialog-title {
-  font-size: 22px;
-  font-weight: bold;
-  color: #4f8cff;
+  font-size: 20px;
+  font-weight: 600;
+  color: #2D3436;
   margin-bottom: 8px;
+  text-align: center;
 }
 
 .track-dialog-row {
@@ -606,44 +673,45 @@ function viewUserTrack() {
 
 .track-dialog-row label {
   width: 100px;
-  color: #7c3aed;
-  font-weight: bold;
+  color: #7D9E87;
+  font-weight: 600;
+  font-size: 14px;
 }
 
 .track-dialog-actions {
   display: flex;
-  justify-content: flex-end;
-  gap: 18px;
+  justify-content: center;
+  gap: 16px;
   margin-top: 12px;
 }
 
 .track-dialog-btn {
-  background: linear-gradient(90deg, #7c3aed 0%, #4f8cff 100%);
-  color: #fff;
+  background: linear-gradient(135deg, #7D9E87 0%, #6B9AC4 100%);
+  color: #FFFFFF;
   border: none;
   border-radius: 10px;
-  padding: 8px 28px;
-  font-size: 16px;
-  font-weight: bold;
+  padding: 10px 28px;
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
-  transition: background 0.22s, color 0.22s, transform 0.18s;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(107, 154, 196, 0.2);
 }
 
 .track-dialog-btn:hover {
-  background: linear-gradient(90deg, #ffb6c1 0%, #4f8cff 100%);
-  color: #222;
-  transform: scale(1.06);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(107, 154, 196, 0.35);
 }
 
 .track-dialog-btn.cancel {
-  background: #fff;
-  color: #4f8cff;
-  border: 2px solid #4f8cff;
+  background: #FFFFFF;
+  color: #636E72;
+  border: 1px solid #E8E4DE;
+  box-shadow: none;
 }
 
 .track-dialog-btn.cancel:hover {
-  background: #f0f5ff;
-  color: #222;
+  background: #FAF7F2;
 }
 
 .fence-info {
@@ -660,22 +728,23 @@ function viewUserTrack() {
 }
 
 .fence-label {
-  color: #7c3aed;
-  font-weight: bold;
+  color: #7D9E87;
+  font-weight: 600;
   min-width: 100px;
+  font-size: 14px;
 }
 
 .fence-status.active {
-  color: #4f8cff;
-  background: #e0e7ff;
-  border-radius: 8px;
+  color: #6B9AC4;
+  background: #E9F3FC;
+  border-radius: 6px;
   padding: 2px 12px;
-  font-weight: bold;
+  font-weight: 600;
 }
 
 /* 用户轨迹查看对话框样式 */
 .user-track-dialog {
-  width: 600px;
+  width: 560px;
   max-width: 90vw;
   max-height: 80vh;
   overflow-y: auto;
@@ -691,10 +760,10 @@ function viewUserTrack() {
 
 .search-label {
   display: block;
-  font-weight: bold;
-  color: #4f8cff;
+  font-weight: 600;
+  color: #2D3436;
   margin-bottom: 8px;
-  font-size: 16px;
+  font-size: 14px;
 }
 
 .search-input-container {
@@ -706,30 +775,32 @@ function viewUserTrack() {
 .user-search-input {
   flex: 1;
   padding: 12px 40px 12px 16px;
-  border: 2px solid #e0e7ff;
-  border-radius: 8px;
-  font-size: 16px;
+  border: 1px solid #E8E4DE;
+  border-radius: 10px;
+  font-size: 15px;
   outline: none;
-  transition: border-color 0.3s;
+  transition: all 0.2s ease;
+  background: #FAF7F2;
 }
 
 .user-search-input:focus {
-  border-color: #4f8cff;
+  border-color: #6B9AC4;
+  box-shadow: 0 0 0 3px rgba(107, 154, 196, 0.15);
 }
 
 .search-icon {
   position: absolute;
   right: 12px;
-  color: #666;
+  color: #9BA4A9;
   pointer-events: none;
 }
 
 .user-list {
   max-height: 200px;
   overflow-y: auto;
-  border: 1px solid #e0e7ff;
-  border-radius: 8px;
-  background: #fff;
+  border: 1px solid #E8E4DE;
+  border-radius: 10px;
+  background: #FFFFFF;
 }
 
 .user-item {
@@ -737,8 +808,8 @@ function viewUserTrack() {
   align-items: center;
   padding: 12px 16px;
   cursor: pointer;
-  transition: background-color 0.3s;
-  border-bottom: 1px solid #f0f5ff;
+  transition: all 0.2s ease;
+  border-bottom: 1px solid #FAF7F2;
 }
 
 .user-item:last-child {
@@ -746,19 +817,19 @@ function viewUserTrack() {
 }
 
 .user-item:hover {
-  background: #f8fafc;
+  background: #FAF7F2;
 }
 
 .user-item.selected {
-  background: linear-gradient(90deg, #f0f5ff 0%, #e0e7ff 100%);
-  border-left: 4px solid #4f8cff;
+  background: #E7F2EA;
+  border-left: 3px solid #7D9E87;
 }
 
 .user-avatar {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #4f8cff 0%, #7c3aed 100%);
+  background: linear-gradient(135deg, #7D9E87 0%, #6B9AC4 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -773,65 +844,65 @@ function viewUserTrack() {
 }
 
 .user-name {
-  font-weight: bold;
-  color: #333;
-  margin-bottom: 4px;
-  font-size: 16px;
+  font-weight: 600;
+  color: #2D3436;
+  margin-bottom: 2px;
+  font-size: 15px;
 }
 
 .user-id {
-  font-size: 14px;
-  color: #666;
+  font-size: 13px;
+  color: #636E72;
   margin-bottom: 2px;
 }
 
 .user-department {
   font-size: 12px;
-  color: #999;
+  color: #9BA4A9;
 }
 
 .user-type {
-  padding: 4px 8px;
-  border-radius: 12px;
+  padding: 3px 8px;
+  border-radius: 10px;
   font-size: 12px;
-  font-weight: bold;
+  font-weight: 500;
   color: white;
   flex-shrink: 0;
 }
 
 .user-type.student {
-  background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, #7D9E87 0%, #6B9AC4 100%);
 }
 
 .user-type.teacher {
-  background: linear-gradient(90deg, #4f8cff 0%, #7c3aed 100%);
+  background: linear-gradient(135deg, #6B9AC4 0%, #7D9E87 100%);
 }
 
 .user-type.staff {
-  background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);
+  background: linear-gradient(135deg, #D4A574 0%, #C9735D 100%);
 }
 
 .empty-users {
   text-align: center;
   padding: 40px 20px;
-  color: #666;
+  color: #636E72;
 }
 
 .empty-icon {
-  color: #ccc;
+  color: #E8E4DE;
   margin-bottom: 12px;
 }
 
 .empty-text {
-  font-size: 16px;
+  font-size: 15px;
 }
 
 .selected-user-section {
   margin-bottom: 20px;
   padding: 16px;
-  background: #f8fafc;
-  border: 1px solid #e0e7ff;
-  border-radius: 8px;
+  background: #FAF7F2;
+  border: 1px solid #E8E4DE;
+  border-radius: 12px;
 }
 
 .selected-user-header {
@@ -842,47 +913,47 @@ function viewUserTrack() {
 }
 
 .selected-label {
-  font-weight: bold;
-  color: #4f8cff;
-  font-size: 16px;
+  font-weight: 600;
+  color: #7D9E87;
+  font-size: 14px;
 }
 
 .clear-selection-btn {
-  background: #ff6b6b;
+  background: #C9735D;
   color: white;
   border: none;
   border-radius: 50%;
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.3s;
+  transition: all 0.2s ease;
 }
 
 .clear-selection-btn:hover {
-  background: #ff5252;
+  background: #b86350;
 }
 
 .selected-user-card {
   display: flex;
   align-items: center;
   padding: 12px;
-  background: white;
-  border-radius: 8px;
-  border: 1px solid #e0e7ff;
+  background: #FFFFFF;
+  border-radius: 10px;
+  border: 1px solid #E8E4DE;
 }
 
 .selected-user-card .user-avatar {
-  width: 48px;
-  height: 48px;
-  margin-right: 16px;
+  width: 44px;
+  height: 44px;
+  margin-right: 14px;
 }
 
 .selected-user-card .user-name {
-  font-size: 18px;
+  font-size: 16px;
   margin-bottom: 6px;
 }
 
@@ -893,8 +964,8 @@ function viewUserTrack() {
 }
 
 .user-details span {
-  font-size: 14px;
-  color: #666;
+  font-size: 13px;
+  color: #636E72;
 }
 
 .date-selection-section {
@@ -904,26 +975,29 @@ function viewUserTrack() {
 .date-input {
   flex: 1;
   padding: 12px 16px;
-  border: 2px solid #e0e7ff;
-  border-radius: 8px;
-  font-size: 16px;
+  border: 1px solid #E8E4DE;
+  border-radius: 10px;
+  font-size: 15px;
   outline: none;
-  transition: border-color 0.3s;
+  transition: all 0.2s ease;
+  background: #FAF7F2;
 }
 
 .date-input:focus {
-  border-color: #4f8cff;
+  border-color: #6B9AC4;
+  box-shadow: 0 0 0 3px rgba(107, 154, 196, 0.15);
 }
 
 .track-dialog-btn:disabled {
-  background: #e0e7ff;
-  color: #aaa;
+  background: #E8E4DE;
+  color: #9BA4A9;
   cursor: not-allowed;
-  opacity: 0.6;
+  opacity: 0.7;
+  box-shadow: none;
 }
 
 .track-dialog-btn:disabled:hover {
-  background: #e0e7ff;
+  background: #E8E4DE;
   transform: none;
   box-shadow: none;
 }

@@ -88,15 +88,16 @@ onMounted(() => {
 <style lang="scss" scoped>
 .settings-page {
   min-height: 100vh;
-  background: #F5F5F5;
+  background: #FAF7F2;
   padding: 24rpx 32rpx;
 }
 
 .menu-section {
   background: #FFFFFF;
-  border-radius: 16rpx;
+  border-radius: 24rpx;
   margin-bottom: 24rpx;
   overflow: hidden;
+  box-shadow: 0 4rpx 16rpx rgba(45, 52, 54, 0.06);
 }
 
 .menu-item {
@@ -104,7 +105,7 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 32rpx;
-  border-bottom: 1rpx solid #F0F0F0;
+  border-bottom: 1rpx solid #E8E4DE;
   
   &:last-child {
     border-bottom: none;
@@ -113,23 +114,23 @@ onMounted(() => {
 
 .menu-text {
   font-size: 30rpx;
-  color: #333333;
+  color: #2D3436;
 }
 
 .menu-value {
   font-size: 28rpx;
-  color: #999999;
+  color: #9BA4A9;
 }
 
 .menu-arrow {
   font-size: 36rpx;
-  color: #CCCCCC;
+  color: #9BA4A9;
 }
 
 .version-info {
   text-align: center;
   padding: 48rpx;
   font-size: 26rpx;
-  color: #999999;
+  color: #9BA4A9;
 }
 </style>
