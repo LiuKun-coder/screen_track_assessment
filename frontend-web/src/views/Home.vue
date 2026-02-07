@@ -199,44 +199,121 @@ onMounted(() => {
   font-size: 15px;
   font-weight: 500;
   color: #636E72;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   text-align: left;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 左侧指示条 */
+.menu-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%) scaleY(0);
+  width: 4px;
+  height: 60%;
+  background: linear-gradient(180deg, #7D9E87 0%, #5B8A67 100%);
+  border-radius: 0 4px 4px 0;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 背景光晕效果 */
+.menu-item::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 30% 50%, rgba(125, 158, 135, 0.1) 0%, transparent 60%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
 }
 
 .menu-item:hover {
-  background: #FFFCF8;
+  background: linear-gradient(135deg, #FFFCF8 0%, #F8F5F0 100%);
   color: #2D3436;
+  transform: translateX(4px);
+}
+
+.menu-item:hover::after {
+  opacity: 0.5;
 }
 
 .menu-item.active {
-  background: #FFFFFF;
+  background: linear-gradient(135deg, #F0F7F2 0%, #E8F0EA 100%);
   color: #2D3436;
-  box-shadow: 0 2px 8px rgba(45, 52, 54, 0.06);
-  border: 1px solid #E8E4DE;
+  box-shadow: 0 4px 12px rgba(125, 158, 135, 0.15);
+  border: 1px solid rgba(125, 158, 135, 0.3);
+  transform: translateX(4px);
+}
+
+.menu-item.active::before {
+  transform: translateY(-50%) scaleY(1);
+}
+
+.menu-item.active::after {
+  opacity: 1;
+}
+
+/* 点击时的涟漪效果 */
+.menu-item:active {
+  transform: translateX(4px) scale(0.98);
 }
 
 .menu-content {
   display: flex;
   align-items: center;
   gap: 12px;
+  position: relative;
+  z-index: 1;
 }
 
 .menu-icon {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
-  opacity: 0.7;
+  opacity: 0.6;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 8px;
+  padding: 2px;
 }
 
 .menu-item.active .menu-icon {
   opacity: 1;
   color: #7D9E87;
+  background: rgba(125, 158, 135, 0.15);
+  transform: scale(1.1);
+  animation: iconBounce 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
 .menu-item:hover .menu-icon {
   opacity: 1;
+  transform: scale(1.05);
+}
+
+/* 图标弹跳动画 */
+@keyframes iconBounce {
+  0% {
+    transform: scale(0.8);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1.1);
+  }
+}
+
+/* 选中状态的文字样式 */
+.menu-item.active .menu-content > span:not(.menu-icon) {
+  font-weight: 600;
+  color: #3D5A45;
 }
 
 .main-content {

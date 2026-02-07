@@ -20,6 +20,10 @@
             <span class="date">{{ currentDate }}</span>
             <span class="time-text">{{ currentTime }}</span>
           </div>
+          <div class="back-button" @click="goBackHome">
+            <span class="back-icon">⬅</span>
+            <span class="back-text">返回主页</span>
+          </div>
         </div>
         <div class="header-decoration-right"></div>
       </div>
@@ -139,9 +143,12 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue';
+import { useRouter } from 'vue-router';
 import * as echarts from 'echarts';
 import mapJson from '@/assets/cumt_nanhu.json';
 import { getScreenStats } from '@/api/screen';
+
+const router = useRouter();
 
 // --- 地图引用 ---
 const mapChartRef = ref(null);
@@ -495,6 +502,11 @@ const updateTime = () => {
   currentTime.value = timeStr;
 };
 
+// --- 返回主页 ---
+const goBackHome = () => {
+  router.push('/home');
+};
+
 onMounted(async () => {
   updateTime();
   timer = setInterval(updateTime, 1000);
@@ -642,6 +654,66 @@ onUnmounted(() => {
 .time-text {
   font-weight: bold;
   font-family: 'Courier New', Courier, monospace;
+}
+
+/* 返回按钮样式 */
+.back-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.15), rgba(14, 165, 233, 0.1));
+  padding: 8px 18px;
+  border-radius: 20px;
+  border: 1px solid rgba(165, 243, 252, 0.4);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 16px;
+  color: #a5f3fc;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(6, 182, 212, 0.2);
+}
+
+.back-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(165, 243, 252, 0.3), transparent);
+  transition: left 0.5s;
+}
+
+.back-button:hover {
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.3), rgba(14, 165, 233, 0.2));
+  border-color: #67e8f9;
+  box-shadow: 0 0 15px rgba(6, 182, 212, 0.5), 0 0 30px rgba(6, 182, 212, 0.2);
+  transform: translateY(-1px);
+  color: #ffffff;
+}
+
+.back-button:hover::before {
+  left: 100%;
+}
+
+.back-button:active {
+  transform: translateY(0);
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.4);
+}
+
+.back-icon {
+  font-size: 18px;
+  transition: transform 0.3s;
+}
+
+.back-button:hover .back-icon {
+  transform: translateX(-3px);
+}
+
+.back-text {
+  font-weight: 500;
+  letter-spacing: 0.5px;
 }
 
 /* --- Body Layout --- */
