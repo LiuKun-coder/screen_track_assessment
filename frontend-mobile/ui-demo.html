@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=375, height=812, initial-scale=1.0">
+  <title>校园电动车管理 - 移动端UI设计</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* ========================================
+       设计理念：温暖自然、去AI味道
+       1. 温暖的米色/奶白背景
+       2. 鼠尾草绿、陶土红、天空蓝等自然色
+       3. 简洁留白，无霓虹发光
+       4. 克制的圆角和柔和阴影
+       5. 友好亲切的文案
+    ======================================== */
+
+    :root {
+      /* 温暖自然的配色 */
+      --bg-cream: #FAF7F2;
+      --bg-warm-white: #FFFCF8;
+      --card-bg: #FFFFFF;
+
+      --text-primary: #2D3436;
+      --text-secondary: #636E72;
+      --text-muted: #9BA4A9;
+
+      --accent-sage: #7D9E87;
+      /* 鼠尾草绿 */
+      --accent-terracotta: #C9735D;
+      /* 陶土红 */
+      --accent-sky: #6B9AC4;
+      /* 天空蓝 */
+      --accent-warm: #D4A574;
+      /* 暖杏色 */
+      --accent-soft-green: #E7F2EA;
+      --accent-soft-blue: #E9F3FC;
+      --accent-soft-orange: #FDF3E7;
+      --accent-soft-red: #FDEAE9;
+
+      --border-soft: #E8E4DE;
+      --shadow-warm: rgba(45, 52, 54, 0.06);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(180deg, #E8E4DE 0%, #D5D0C8 100%);
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+
+    /* 展示容器 */
+    .demo-wrapper {
+      display: flex;
+      gap: 40px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .phone-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .phone-frame {
+      width: 375px;
+      height: 812px;
+      background: #1a1a1a;
+      border-radius: 44px;
+      padding: 12px;
+      box-shadow:
+        0 30px 60px rgba(0, 0, 0, 0.2),
+        inset 0 2px 4px rgba(255, 255, 255, 0.1);
+    }
+
+    .phone-screen {
+      width: 100%;
+      height: 100%;
+      background: var(--bg-cream);
+      border-radius: 32px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .phone-screen::-webkit-scrollbar {
+      display: none;
+    }
+
+    .screen-content {
+      height: 100%;
+      overflow-y: auto;
+      padding-bottom: 80px;
+    }
+
+    .page-label {
+      margin-top: 16px;
+      font-size: 14px;
+      color: #666;
+      font-weight: 500;
+    }
+
+    /* ===== 状态栏 ===== */
+    .status-bar {
+      height: 44px;
+      padding: 12px 24px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .status-icons {
+      display: flex;
+      gap: 6px;
+      font-size: 12px;
+    }
+
+    /* ===== 首页 ===== */
+    .home-header {
+      padding: 20px 20px 24px;
+    }
+
+    .greeting-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .user-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .user-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent-warm) 0%, var(--accent-terracotta) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 500;
+      font-size: 16px;
+    }
+
+    .greeting-text {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 2px;
+    }
+
+    .user-name {
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .notify-btn {
+      width: 40px;
+      height: 40px;
+      background: var(--card-bg);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      box-shadow: 0 2px 8px var(--shadow-warm);
+      position: relative;
+    }
+
+    .notify-dot {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 8px;
+      height: 8px;
+      background: var(--accent-terracotta);
+      border-radius: 50%;
+      border: 2px solid var(--card-bg);
+    }
+
+    .welcome-card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 2px 12px var(--shadow-warm);
+    }
+
+    .welcome-text {
+      font-size: 15px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .welcome-text strong {
+      color: var(--text-primary);
+    }
+
+    /* ===== 统计区域 ===== */
+    .stats-section {
+      padding: 0 20px;
+      margin-bottom: 24px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .stat-card {
+      background: var(--card-bg);
+      border-radius: 14px;
+      padding: 16px 12px;
+      text-align: center;
+      box-shadow: 0 2px 8px var(--shadow-warm);
+    }
+
+    .stat-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      margin: 0 auto 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    .stat-icon.red {
+      background: var(--accent-soft-red);
+    }
+
+    .stat-icon.green {
+      background: var(--accent-soft-green);
+    }
+
+    .stat-icon.orange {
+      background: var(--accent-soft-orange);
+    }
+
+    .stat-value {
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--text-primary);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* ===== 快捷入口 ===== */
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px;
+      margin-bottom: 14px;
+    }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .section-more {
+      font-size: 13px;
+      color: var(--accent-sky);
+    }
+
+    .quick-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0;
+      padding: 0 12px;
+      margin-bottom: 24px;
+    }
+
+    .quick-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px 0;
+    }
+
+    .quick-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      margin-bottom: 8px;
+    }
+
+    .quick-icon.i1 {
+      background: var(--accent-soft-red);
+    }
+
+    .quick-icon.i2 {
+      background: var(--accent-soft-orange);
+    }
+
+    .quick-icon.i3 {
+      background: var(--accent-soft-green);
+    }
+
+    .quick-icon.i4 {
+      background: var(--accent-soft-blue);
+    }
+
+    .quick-text {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    /* ===== 违规列表 ===== */
+    .violation-section {
+      padding: 0 20px;
+    }
+
+    .violation-card {
+      background: var(--card-bg);
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 8px var(--shadow-warm);
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+
+    .v-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: var(--bg-cream);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .v-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .v-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 6px;
+    }
+
+    .v-type {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .v-status {
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .v-status.pending {
+      background: var(--accent-soft-orange);
+      color: #B8860B;
+    }
+
+    .v-status.done {
+      background: var(--accent-soft-green);
+      color: var(--accent-sage);
+    }
+
+    .v-desc {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+
+    .v-meta {
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      gap: 12px;
+    }
+
+    /* ===== 底部导航 ===== */
+    .tab-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 80px;
+      background: var(--card-bg);
+      display: flex;
+      justify-content: space-around;
+      align-items: flex-start;
+      padding-top: 12px;
+      border-top: 1px solid var(--border-soft);
+    }
+
+    .tab-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .tab-icon {
+      font-size: 22px;
+      opacity: 0.5;
+    }
+
+    .tab-item.active .tab-icon {
+      opacity: 1;
+    }
+
+    .tab-text {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .tab-item.active .tab-text {
+      color: var(--accent-sage);
+      font-weight: 500;
+    }
+
+    /* ===== 登录页 ===== */
+    .login-page {
+      height: 100%;
+      background: var(--bg-cream);
+      padding: 60px 24px 40px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .login-header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .login-logo {
+      width: 72px;
+      height: 72px;
+      margin: 0 auto 20px;
+      background: linear-gradient(135deg, var(--accent-sage) 0%, var(--accent-sky) 100%);
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+    }
+
+    .login-title {
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+
+    .login-subtitle {
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    .login-form {
+      background: var(--card-bg);
+      border-radius: 20px;
+      padding: 28px 20px;
+      box-shadow: 0 4px 20px var(--shadow-warm);
+    }
+
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+
+    .form-input {
+      width: 100%;
+      height: 48px;
+      padding: 0 16px;
+      border: 1px solid var(--border-soft);
+      border-radius: 12px;
+      font-size: 15px;
+      background: var(--bg-cream);
+      color: var(--text-primary);
+      transition: all 0.2s;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: var(--accent-sky);
+      background: var(--card-bg);
+    }
+
+    .form-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .form-options {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      font-size: 13px;
+    }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text-secondary);
+    }
+
+    .forgot-link {
+      color: var(--accent-sky);
+      text-decoration: none;
+    }
+
+    .login-btn {
+      width: 100%;
+      height: 48px;
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--accent-sage) 0%, var(--accent-sky) 100%);
+      color: white;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .login-divider {
+      display: flex;
+      align-items: center;
+      margin: 28px 0 20px;
+    }
+
+    .divider-line {
+      flex: 1;
+      height: 1px;
+      background: var(--border-soft);
+    }
+
+    .divider-text {
+      padding: 0 16px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .wx-btn {
+      width: 52px;
+      height: 52px;
+      margin: 0 auto;
+      background: #07C160;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+
+    .register-tip {
+      text-align: center;
+      margin-top: 24px;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .register-tip a {
+      color: var(--accent-terracotta);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    /* ===== 个人中心 ===== */
+    .profile-header {
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .profile-avatar {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent-warm) 0%, var(--accent-terracotta) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 24px;
+      font-weight: 500;
+    }
+
+    .profile-info {
+      flex: 1;
+    }
+
+    .profile-name {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .profile-id {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .profile-edit {
+      width: 36px;
+      height: 36px;
+      background: var(--card-bg);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      box-shadow: 0 2px 6px var(--shadow-warm);
+    }
+
+    .profile-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      margin: 0 20px 20px;
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 2px 12px var(--shadow-warm);
+    }
+
+    .p-stat {
+      text-align: center;
+      border-right: 1px solid var(--border-soft);
+    }
+
+    .p-stat:last-child {
+      border-right: none;
+    }
+
+    .p-stat-value {
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .p-stat-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .menu-section {
+      margin: 0 20px 16px;
+      background: var(--card-bg);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px var(--shadow-warm);
+    }
+
+    .menu-item {
+      display: flex;
+      align-items: center;
+      padding: 16px;
+      border-bottom: 1px solid var(--border-soft);
+    }
+
+    .menu-item:last-child {
+      border-bottom: none;
+    }
+
+    .menu-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      margin-right: 14px;
+    }
+
+    .menu-icon.c1 {
+      background: var(--accent-soft-red);
+    }
+
+    .menu-icon.c2 {
+      background: var(--accent-soft-orange);
+    }
+
+    .menu-icon.c3 {
+      background: var(--accent-soft-green);
+    }
+
+    .menu-icon.c4 {
+      background: var(--accent-soft-blue);
+    }
+
+    .menu-text {
+      flex: 1;
+      font-size: 15px;
+      color: var(--text-primary);
+    }
+
+    .menu-badge {
+      background: var(--accent-terracotta);
+      color: white;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      margin-right: 8px;
+    }
+
+    .menu-arrow {
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .logout-btn {
+      margin: 24px 20px;
+      height: 48px;
+      border: 1px solid var(--accent-terracotta);
+      border-radius: 12px;
+      background: transparent;
+      color: var(--accent-terracotta);
+      font-size: 15px;
+      font-weight: 500;
+    }
+
+    /* ===== 设计说明 ===== */
+    .design-notes {
+      max-width: 800px;
+      margin: 60px auto 0;
+      background: var(--card-bg);
+      border-radius: 20px;
+      padding: 32px;
+      box-shadow: 0 4px 20px var(--shadow-warm);
+    }
+
+    .design-notes h2 {
+      font-size: 20px;
+      color: var(--text-primary);
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .note-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+    }
+
+    .note-item {
+      display: flex;
+      gap: 14px;
+    }
+
+    .note-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: var(--bg-cream);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .note-text h4 {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .note-text p {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .color-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border-soft);
+    }
+
+    .color-chip {
+      width: 60px;
+      height: 60px;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      padding-bottom: 6px;
+      color: white;
+      font-size: 10px;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="demo-wrapper">
+    <!-- 首页 -->
+    <div class="phone-col">
+      <div class="phone-frame">
+        <div class="phone-screen">
+          <div class="screen-content">
+            <!-- 状态栏 -->
+            <div class="status-bar">
+              <span>9:41</span>
+              <div class="status-icons">📶 📡 🔋</div>
+            </div>
+
+            <!-- 头部 -->
+            <div class="home-header">
+              <div class="greeting-row">
+                <div class="user-section">
+                  <div class="user-avatar">刘</div>
+                  <div>
+                    <div class="greeting-text">下午好</div>
+                    <div class="user-name">刘同学</div>
+                  </div>
+                </div>
+                <div class="notify-btn">
+                  🔔
+                  <div class="notify-dot"></div>
+                </div>
+              </div>
+
+              <div class="welcome-card">
+                <div class="welcome-text">
+                  今天天气不错~<br>
+                  <strong>骑车慢一点，安全多一分</strong> 🚲
+                </div>
+              </div>
+            </div>
+
+            <!-- 统计 -->
+            <div class="stats-section">
+              <div class="stats-grid">
+                <div class="stat-card">
+                  <div class="stat-icon red">⚠️</div>
+                  <div class="stat-value">3</div>
+                  <div class="stat-label">我的违规</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-icon orange">⏳</div>
+                  <div class="stat-value">1</div>
+                  <div class="stat-label">待处理</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-icon green">✅</div>
+                  <div class="stat-value">2</div>
+                  <div class="stat-label">已完成</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 快捷入口 -->
+            <div class="section-header">
+              <div class="section-title">常用功能</div>
+            </div>
+            <div class="quick-grid">
+              <div class="quick-item">
+                <div class="quick-icon i1">📋</div>
+                <div class="quick-text">违规通报</div>
+              </div>
+              <div class="quick-item">
+                <div class="quick-icon i2">📝</div>
+                <div class="quick-text">我的记录</div>
+              </div>
+              <div class="quick-item">
+                <div class="quick-icon i3">🗺️</div>
+                <div class="quick-text">轨迹查询</div>
+              </div>
+              <div class="quick-item">
+                <div class="quick-icon i4">🔒</div>
+                <div class="quick-text">电子围栏</div>
+              </div>
+            </div>
+
+            <!-- 最新通报 -->
+            <div class="section-header">
+              <div class="section-title">最近的通报</div>
+              <span class="section-more">查看更多 →</span>
+            </div>
+
+            <div class="violation-section">
+              <div class="violation-card">
+                <div class="v-icon">🅿️</div>
+                <div class="v-content">
+                  <div class="v-header">
+                    <span class="v-type">违规停车</span>
+                    <span class="v-status pending">待处理</span>
+                  </div>
+                  <div class="v-desc">在图书馆正门非停车区域停放</div>
+                  <div class="v-meta">
+                    <span>📍 图书馆</span>
+                    <span>🕐 2小时前</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="violation-card">
+                <div class="v-icon">🏃</div>
+                <div class="v-content">
+                  <div class="v-header">
+                    <span class="v-type">超速行驶</span>
+                    <span class="v-status done">已处理</span>
+                  </div>
+                  <div class="v-desc">在教学区路段超过限速15km/h</div>
+                  <div class="v-meta">
+                    <span>📍 东门</span>
+                    <span>🕐 昨天</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="violation-card">
+                <div class="v-icon">⛑️</div>
+                <div class="v-content">
+                  <div class="v-header">
+                    <span class="v-type">未戴头盔</span>
+                    <span class="v-status done">已处理</span>
+                  </div>
+                  <div class="v-desc">骑行时未佩戴安全头盔</div>
+                  <div class="v-meta">
+                    <span>📍 北区</span>
+                    <span>🕐 3天前</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 底部导航 -->
+          <div class="tab-bar">
+            <div class="tab-item active">
+              <div class="tab-icon">🏠</div>
+              <div class="tab-text">首页</div>
+            </div>
+            <div class="tab-item">
+              <div class="tab-icon">📋</div>
+              <div class="tab-text">通报</div>
+            </div>
+            <div class="tab-item">
+              <div class="tab-icon">🗺️</div>
+              <div class="tab-text">轨迹</div>
+            </div>
+            <div class="tab-item">
+              <div class="tab-icon">👤</div>
+              <div class="tab-text">我的</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="page-label">首页</div>
+    </div>
+
+    <!-- 登录页 -->
+    <div class="phone-col">
+      <div class="phone-frame">
+        <div class="phone-screen">
+          <div class="login-page">
+            <div class="login-header">
+              <div class="login-logo">🚲</div>
+              <div class="login-title">欢迎回来</div>
+              <div class="login-subtitle">登录你的账号继续使用</div>
+            </div>
+
+            <div class="login-form">
+              <div class="form-group">
+                <label class="form-label">用户名</label>
+                <input type="text" class="form-input" placeholder="请输入用户名">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">密码</label>
+                <input type="password" class="form-input" placeholder="请输入密码">
+              </div>
+
+              <div class="form-options">
+                <label class="checkbox-row">
+                  <input type="checkbox">
+                  <span>记住我</span>
+                </label>
+                <a href="#" class="forgot-link">忘记密码？</a>
+              </div>
+
+              <button class="login-btn">登 录</button>
+
+              <div class="login-divider">
+                <div class="divider-line"></div>
+                <span class="divider-text">其他方式</span>
+                <div class="divider-line"></div>
+              </div>
+
+              <div class="wx-btn">💬</div>
+
+              <div class="register-tip">
+                还没有账号？<a href="#">立即注册</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="page-label">登录</div>
+    </div>
+
+    <!-- 个人中心 -->
+    <div class="phone-col">
+      <div class="phone-frame">
+        <div class="phone-screen">
+          <div class="screen-content">
+            <!-- 状态栏 -->
+            <div class="status-bar">
+              <span>9:41</span>
+              <div class="status-icons">📶 📡 🔋</div>
+            </div>
+
+            <!-- 头部 -->
+            <div class="profile-header">
+              <div class="profile-avatar">刘</div>
+              <div class="profile-info">
+                <div class="profile-name">刘同学</div>
+                <div class="profile-id">学号: 2024001001</div>
+              </div>
+              <div class="profile-edit">✏️</div>
+            </div>
+
+            <!-- 统计 -->
+            <div class="profile-stats">
+              <div class="p-stat">
+                <div class="p-stat-value">3</div>
+                <div class="p-stat-label">违规记录</div>
+              </div>
+              <div class="p-stat">
+                <div class="p-stat-value">1</div>
+                <div class="p-stat-label">申诉中</div>
+              </div>
+              <div class="p-stat">
+                <div class="p-stat-value">156</div>
+                <div class="p-stat-label">骑行公里</div>
+              </div>
+            </div>
+
+            <!-- 菜单 -->
+            <div class="menu-section">
+              <div class="menu-item">
+                <div class="menu-icon c1">📝</div>
+                <span class="menu-text">我的违规</span>
+                <span class="menu-badge">1</span>
+                <span class="menu-arrow">›</span>
+              </div>
+              <div class="menu-item">
+                <div class="menu-icon c2">📮</div>
+                <span class="menu-text">申诉记录</span>
+                <span class="menu-arrow">›</span>
+              </div>
+              <div class="menu-item">
+                <div class="menu-icon c3">🗺️</div>
+                <span class="menu-text">轨迹查询</span>
+                <span class="menu-arrow">›</span>
+              </div>
+            </div>
+
+            <div class="menu-section">
+              <div class="menu-item">
+                <div class="menu-icon c4">⚙️</div>
+                <span class="menu-text">设置</span>
+                <span class="menu-arrow">›</span>
+              </div>
+              <div class="menu-item">
+                <div class="menu-icon c2">ℹ️</div>
+                <span class="menu-text">关于我们</span>
+                <span class="menu-arrow">›</span>
+              </div>
+              <div class="menu-item">
+                <div class="menu-icon c3">💬</div>
+                <span class="menu-text">意见反馈</span>
+                <span class="menu-arrow">›</span>
+              </div>
+            </div>
+
+            <button class="logout-btn">退出登录</button>
+          </div>
+
+          <!-- 底部导航 -->
+          <div class="tab-bar">
+            <div class="tab-item">
+              <div class="tab-icon">🏠</div>
+              <div class="tab-text">首页</div>
+            </div>
+            <div class="tab-item">
+              <div class="tab-icon">📋</div>
+              <div class="tab-text">通报</div>
+            </div>
+            <div class="tab-item">
+              <div class="tab-icon">🗺️</div>
+              <div class="tab-text">轨迹</div>
+            </div>
+            <div class="tab-item active">
+              <div class="tab-icon">👤</div>
+              <div class="tab-text">我的</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="page-label">个人中心</div>
+    </div>
+  </div>
+
+  <!-- 设计说明 -->
+  <div class="design-notes">
+    <h2>🎨 设计说明</h2>
+    <div class="note-grid">
+      <div class="note-item">
+        <div class="note-icon">🌿</div>
+        <div class="note-text">
+          <h4>温暖自然的色调</h4>
+          <p>米白背景 #FAF7F2，搭配鼠尾草绿、陶土红等自然色系，远离冷峻科技感</p>
+        </div>
+      </div>
+      <div class="note-item">
+        <div class="note-icon">✨</div>
+        <div class="note-text">
+          <h4>简洁克制的装饰</h4>
+          <p>去除渐变发光、复杂装饰，用简单的阴影和留白营造层次</p>
+        </div>
+      </div>
+      <div class="note-item">
+        <div class="note-icon">💬</div>
+        <div class="note-text">
+          <h4>友好的文案语气</h4>
+          <p>"骑车慢一点，安全多一分"，像朋友一样说话，有温度</p>
+        </div>
+      </div>
+      <div class="note-item">
+        <div class="note-icon">👋</div>
+        <div class="note-text">
+          <h4>有温度的交互</h4>
+          <p>柔和圆角、舒适留白，每个元素都恰到好处</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="color-row">
+      <div class="color-chip" style="background: #FAF7F2; color: #636E72;">米白</div>
+      <div class="color-chip" style="background: #7D9E87;">鼠尾草</div>
+      <div class="color-chip" style="background: #C9735D;">陶土红</div>
+      <div class="color-chip" style="background: #6B9AC4;">天空蓝</div>
+      <div class="color-chip" style="background: #D4A574;">暖杏色</div>
+      <div class="color-chip" style="background: #2D3436;">深灰</div>
+    </div>
+  </div>
+</body>
+
+</html>

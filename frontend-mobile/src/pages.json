@@ -1,0 +1,123 @@
+{
+	"pages": [
+		{
+			"path": "pages/auth/login",
+			"style": {
+				"navigationBarTitleText": "登录",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/home/index",
+			"style": {
+				"navigationBarTitleText": "首页"
+			}
+		},
+		{
+			"path": "pages/auth/register",
+			"style": {
+				"navigationBarTitleText": "注册"
+			}
+		},
+		{
+			"path": "pages/auth/reset-password",
+			"style": {
+				"navigationBarTitleText": "重置密码"
+			}
+		},
+		{
+			"path": "pages/violation/report",
+			"style": {
+				"navigationBarTitleText": "违规通报"
+			}
+		},
+		{
+			"path": "pages/violation/my-violations",
+			"style": {
+				"navigationBarTitleText": "我的违规"
+			}
+		},
+		{
+			"path": "pages/violation/detail",
+			"style": {
+				"navigationBarTitleText": "违规详情"
+			}
+		},
+		{
+			"path": "pages/track/index",
+			"style": {
+				"navigationBarTitleText": "轨迹回溯"
+			}
+		},
+		{
+			"path": "pages/track/playback",
+			"style": {
+				"navigationBarTitleText": "轨迹回放"
+			}
+		},
+		{
+			"path": "pages/track/fence",
+			"style": {
+				"navigationBarTitleText": "电子围栏"
+			}
+		},
+		{
+			"path": "pages/profile/index",
+			"style": {
+				"navigationBarTitleText": "个人中心"
+			}
+		},
+		{
+			"path": "pages/profile/settings",
+			"style": {
+				"navigationBarTitleText": "设置"
+			}
+		}
+	],
+	"globalStyle": {
+		"navigationBarTextStyle": "black",
+		"navigationBarTitleText": "校园电动车管理",
+		"navigationBarBackgroundColor": "#FFFFFF",
+		"backgroundColor": "#F5F5F5"
+	},
+	"tabBar": {
+		"color": "#7A7E83",
+		"selectedColor": "#007AFF",
+		"borderStyle": "black",
+		"backgroundColor": "#FFFFFF",
+		"list": [
+			{
+				"pagePath": "pages/home/index",
+				"iconPath": "static/icons/home.svg",
+				"selectedIconPath": "static/icons/home-active.svg",
+				"text": "首页"
+			},
+			{
+				"pagePath": "pages/violation/report",
+				"iconPath": "static/icons/violation.svg",
+				"selectedIconPath": "static/icons/violation-active.svg",
+				"text": "违规查询"
+			},
+			{
+				"pagePath": "pages/track/index",
+				"iconPath": "static/icons/track.svg",
+				"selectedIconPath": "static/icons/track-active.svg",
+				"text": "轨迹回溯"
+			},
+			{
+				"pagePath": "pages/profile/index",
+				"iconPath": "static/icons/profile.svg",
+				"selectedIconPath": "static/icons/profile-active.svg",
+				"text": "我的"
+			}
+		]
+	},
+	"easycom": {
+		"autoscan": true,
+		"custom": {
+			"^violation-card$": "@/components/business/violation-card.vue",
+			"^filter-panel$": "@/components/business/filter-panel.vue",
+			"^map-track$": "@/components/business/map-track.vue"
+		}
+	}
+}
