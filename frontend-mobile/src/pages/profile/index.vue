@@ -99,7 +99,7 @@ function showAbout() {
 }
 
 function showFeedback() {
-  uni.showToast({ title: '反馈功能开发中', icon: 'none' })
+  uni.navigateTo({ url: '/pages/profile/feedback' })
 }
 
 function handleLogout() {

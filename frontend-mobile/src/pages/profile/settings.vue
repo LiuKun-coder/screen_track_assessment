@@ -59,11 +59,11 @@ function clearCache() {
 }
 
 function showPrivacy() {
-  uni.showToast({ title: '隐私政策页面开发中', icon: 'none' })
+  uni.navigateTo({ url: '/pages/profile/privacy' })
 }
 
 function showUserAgreement() {
-  uni.showToast({ title: '用户协议页面开发中', icon: 'none' })
+  uni.navigateTo({ url: '/pages/profile/user-agreement' })
 }
 
 function calculateCacheSize() {
