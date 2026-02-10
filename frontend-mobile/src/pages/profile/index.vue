@@ -57,15 +57,51 @@
     <view class="login-tip" v-else>
       <button class="login-btn" @click="goToLogin">登录/注册</button>
     </view>
+
+    <view v-if="showEditPopup" class="popup-mask" @click="closeEditPopup">
+      <view class="popup-card" @click.stop>
+        <view class="popup-header">
+          <text class="popup-title">资料编辑</text>
+          <text class="popup-close" @click="closeEditPopup">×</text>
+        </view>
+
+        <view class="popup-body">
+          <view class="avatar-row">
+            <image class="avatar large" :src="userStore.avatar" mode="aspectFill"></image>
+            <view class="avatar-action">
+              <text class="avatar-label">头像</text>
+              <button class="btn btn-outline small">更换头像</button>
+            </view>
+          </view>
+
+          <view class="form-item">
+            <text class="form-label">用户名</text>
+            <input class="input" type="text" placeholder="请输入用户名" />
+          </view>
+
+          <view class="form-item">
+            <text class="form-label">绑定手机号</text>
+            <input class="input" type="number" placeholder="请输入手机号" maxlength="11" />
+          </view>
+        </view>
+
+        <view class="popup-footer">
+          <button class="btn btn-outline" @click="closeEditPopup">取消</button>
+          <button class="btn btn-primary btn-disabled">保存</button>
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
 <script setup>
+import { ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { useUserStore } from '@/stores/user.js'
 import { navigateToLogin } from '@/utils/route-guard.js'
 
 const userStore = useUserStore()
+const showEditPopup = ref(false)
 
 // 页面显示时检查登录状态
 onShow(() => {
@@ -87,7 +123,11 @@ function editProfile() {
     goToLogin()
     return
   }
-  uni.showToast({ title: '编辑资料开发中', icon: 'none' })
+  showEditPopup.value = true
+}
+
+function closeEditPopup() {
+  showEditPopup.value = false
 }
 
 function showAbout() {
@@ -229,5 +269,110 @@ function goToLogin() {
   color: #FFFFFF;
   font-size: 32rpx;
   border: none;
+}
+
+.popup-mask {
+  position: fixed;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 24rpx;
+  z-index: 999;
+}
+
+.popup-card {
+  width: 100%;
+  background: #FFFFFF;
+  border-radius: 28rpx;
+  box-shadow: 0 12rpx 32rpx rgba(45, 52, 54, 0.16);
+  overflow: hidden;
+}
+
+.popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28rpx 32rpx;
+  border-bottom: 1rpx solid #E8E4DE;
+}
+
+.popup-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #2D3436;
+}
+
+.popup-close {
+  font-size: 44rpx;
+  color: #9BA4A9;
+}
+
+.popup-body {
+  padding: 32rpx;
+}
+
+.avatar-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 32rpx;
+}
+
+.avatar.large {
+  width: 140rpx;
+  height: 140rpx;
+  border-radius: 50%;
+  border: 4rpx solid rgba(125, 158, 135, 0.25);
+  margin-right: 24rpx;
+}
+
+.avatar-action {
+  flex: 1;
+}
+
+.avatar-label {
+  display: block;
+  font-size: 28rpx;
+  color: #2D3436;
+  margin-bottom: 16rpx;
+}
+
+.form-item {
+  margin-bottom: 24rpx;
+}
+
+.form-label {
+  display: block;
+  font-size: 28rpx;
+  color: #2D3436;
+  margin-bottom: 16rpx;
+}
+
+.input {
+  width: 100%;
+  height: 96rpx;
+  border: 2rpx solid #E8E4DE;
+  border-radius: 20rpx;
+  padding: 0 24rpx;
+  font-size: 30rpx;
+  box-sizing: border-box;
+  background: #FAF7F2;
+}
+
+.popup-footer {
+  display: flex;
+  gap: 20rpx;
+  padding: 24rpx 32rpx 32rpx;
+}
+
+.btn.small {
+  height: 72rpx;
+  padding: 0 32rpx;
+  font-size: 28rpx;
+  border-radius: 18rpx;
 }
 </style>
