@@ -3,7 +3,8 @@
  */
 const config = {
   // API基础地址 - 后端服务地址
-  BASE_URL: 'http://localhost:8080/api',
+  // 真机调试请使用本机局域网IP（如：192.168.1.9）
+  BASE_URL: 'http://192.168.1.9:8080/api',
 
   // 请求超时时间
   TIMEOUT: 10000,
