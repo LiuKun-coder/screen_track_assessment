@@ -76,18 +76,18 @@
 
           <view class="form-item">
             <text class="form-label">用户名</text>
-            <input class="input" type="text" placeholder="请输入用户名" />
+            <input class="input" type="text" v-model="editForm.name" placeholder="请输入用户名" />
           </view>
 
           <view class="form-item">
             <text class="form-label">绑定手机号</text>
-            <input class="input" type="number" placeholder="请输入手机号" maxlength="11" />
+            <input class="input" type="number" v-model="editForm.phone" placeholder="请输入手机号" maxlength="11" />
           </view>
         </view>
 
         <view class="popup-footer">
           <button class="btn btn-outline" @click="closeEditPopup">取消</button>
-          <button class="btn btn-primary btn-disabled">保存</button>
+          <button class="btn btn-primary" :class="{ 'btn-disabled': !hasChanges || saving }" @click="saveProfile">保存</button>
         </view>
       </view>
     </view>
@@ -95,13 +95,26 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { useUserStore } from '@/stores/user.js'
 import { navigateToLogin } from '@/utils/route-guard.js'
+import authApi from '@/api/auth.js'
 
 const userStore = useUserStore()
 const showEditPopup = ref(false)
+const saving = ref(false)
+
+const editForm = ref({
+  name: '',
+  phone: ''
+})
+
+const hasChanges = computed(() => {
+  const currentName = userStore.userInfo?.name || userStore.userInfo?.nickname || ''
+  const currentPhone = userStore.userInfo?.phone || ''
+  return editForm.value.name !== currentName || editForm.value.phone !== currentPhone
+})
 
 // 页面显示时检查登录状态
 onShow(() => {
@@ -123,11 +136,43 @@ function editProfile() {
     goToLogin()
     return
   }
+  editForm.value = {
+    name: userStore.userInfo?.name || userStore.userInfo?.nickname || '',
+    phone: userStore.userInfo?.phone || ''
+  }
   showEditPopup.value = true
 }
 
 function closeEditPopup() {
+  if (saving.value) return
   showEditPopup.value = false
+}
+
+async function saveProfile() {
+  if (!hasChanges.value || saving.value) return
+  if (editForm.value.phone && !/^1[3-9]\d{9}$/.test(editForm.value.phone)) {
+    uni.showToast({ title: '手机号格式不正确', icon: 'none' })
+    return
+  }
+
+  saving.value = true
+  try {
+    await authApi.updateProfile({
+      name: editForm.value.name,
+      phone: editForm.value.phone
+    })
+    userStore.updateUserInfo({
+      name: editForm.value.name,
+      nickname: editForm.value.name,
+      phone: editForm.value.phone
+    })
+    uni.showToast({ title: '保存成功', icon: 'success' })
+    showEditPopup.value = false
+  } catch (error) {
+    uni.showToast({ title: error.message || '保存失败', icon: 'none' })
+  } finally {
+    saving.value = false
+  }
 }
 
 function showAbout() {
@@ -150,6 +195,9 @@ function handleLogout() {
       if (res.confirm) {
         await userStore.logout()
         uni.showToast({ title: '已退出登录', icon: 'success' })
+        setTimeout(() => {
+          uni.reLaunch({ url: '/pages/auth/login' })
+        }, 500)
       }
     }
   })

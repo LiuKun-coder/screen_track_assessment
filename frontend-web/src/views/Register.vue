@@ -4,54 +4,62 @@
       <h1 class="login-title">欢迎加入</h1>
       <p class="login-subtitle">创建您的账号</p>
       
-      <el-form class="login-form" :model="registerForm" ref="registerFormRef">
-        <el-input
-          v-model="registerForm.username"
-          placeholder="请输入用户名"
-        >
-          <template #prefix>
-            <el-icon><User /></el-icon>
-          </template>
-        </el-input>
-        
-        <el-input
-          v-model="registerForm.phone"
-          placeholder="请输入手机号"
-        >
-          <template #prefix>
-            <el-icon><Iphone /></el-icon>
-          </template>
-        </el-input>
+      <el-form class="login-form" :model="registerForm" :rules="rules" ref="registerFormRef">
+        <el-form-item prop="username">
+          <el-input
+            v-model="registerForm.username"
+            placeholder="请输入用户名"
+          >
+            <template #prefix>
+              <el-icon><User /></el-icon>
+            </template>
+          </el-input>
+        </el-form-item>
+
+        <el-form-item prop="phone">
+          <el-input
+            v-model="registerForm.phone"
+            placeholder="请输入手机号"
+          >
+            <template #prefix>
+              <el-icon><Iphone /></el-icon>
+            </template>
+          </el-input>
+        </el-form-item>
         
         <div class="verify-code-container">
           <el-input
             v-model="registerForm.verifyCode"
             placeholder="请输入验证码"
           ></el-input>
-          <el-button class="verify-code-btn">获取验证码</el-button>
+          <el-button class="verify-code-btn" :disabled="codeCooldown > 0" @click="handleSendCode">{{ codeCooldown > 0 ? codeCooldown + 's 后重试' : '获取验证码' }}</el-button>
         </div>
         
-        <el-input
-          v-model="registerForm.password"
-          type="password"
-          placeholder="请输入密码"
-          show-password
-        >
-          <template #prefix>
-            <el-icon><Lock /></el-icon>
-          </template>
-        </el-input>
-        
-        <el-input
-          v-model="registerForm.confirmPassword"
-          type="password"
-          placeholder="请确认密码"
-          show-password
-        >
-          <template #prefix>
-            <el-icon><Lock /></el-icon>
-          </template>
-        </el-input>
+        <el-form-item prop="password">
+          <el-input
+            v-model="registerForm.password"
+            type="password"
+            placeholder="请输入密码"
+            show-password
+          >
+            <template #prefix>
+              <el-icon><Lock /></el-icon>
+            </template>
+          </el-input>
+        </el-form-item>
+
+        <el-form-item prop="confirmPassword">
+          <el-input
+            v-model="registerForm.confirmPassword"
+            type="password"
+            placeholder="请确认密码"
+            show-password
+          >
+            <template #prefix>
+              <el-icon><Lock /></el-icon>
+            </template>
+          </el-input>
+        </el-form-item>
         
         <div class="agreement-container">
           <el-checkbox v-model="registerForm.agreement">
@@ -59,7 +67,7 @@
           </el-checkbox>
         </div>
         
-        <el-button type="primary" class="login-btn" @click="handleRegister">注册</el-button>
+        <el-button type="primary" class="login-btn" :loading="submitting" @click="handleRegister">注册</el-button>
       </el-form>
       
       <div class="register-link">
@@ -71,8 +79,10 @@
 
 <script>
 import { ref, reactive } from 'vue'
+import { useRouter } from 'vue-router'
 import { User, Lock, Iphone } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import { register, sendCode } from '@/api/auth'
 
 export default {
   name: 'RegisterView',
@@ -82,7 +92,9 @@ export default {
     Iphone
   },
   setup() {
+    const router = useRouter()
     const registerFormRef = ref(null)
+    const submitting = ref(false)
     
     const registerForm = reactive({
       username: '',
@@ -92,19 +104,107 @@ export default {
       confirmPassword: '',
       agreement: false
     })
-    
-    const handleRegister = () => {
-      if (!registerForm.agreement) {
-        ElMessage.warning('请先阅读并同意服务条款')
+
+    const codeCooldown = ref(0)
+    let cooldownTimer = null
+
+    const handleSendCode = async () => {
+      if (codeCooldown.value > 0) return
+      if (!/^1[3-9]\d{9}$/.test(registerForm.phone)) {
+        ElMessage.warning('请先输入正确的手机号')
         return
       }
-      console.log('注册表单提交', registerForm)
+      try {
+        await sendCode({ phone: registerForm.phone, type: 'register' })
+        ElMessage.success('验证码已发送')
+        codeCooldown.value = 60
+        cooldownTimer = setInterval(() => {
+          codeCooldown.value--
+          if (codeCooldown.value <= 0) clearInterval(cooldownTimer)
+        }, 1000)
+      } catch (error) {
+        ElMessage.error(error?.message || '验证码发送失败')
+      }
+    }
+
+    const validatePhone = (rule, value, callback) => {
+      if (!value) {
+        callback(new Error('请输入手机号'))
+        return
+      }
+      if (!/^1[3-9]\d{9}$/.test(value)) {
+        callback(new Error('手机号格式不正确'))
+        return
+      }
+      callback()
+    }
+
+    const validateConfirmPassword = (rule, value, callback) => {
+      if (!value) {
+        callback(new Error('请确认密码'))
+        return
+      }
+      if (value !== registerForm.password) {
+        callback(new Error('两次输入密码不一致'))
+        return
+      }
+      callback()
+    }
+
+    const rules = {
+      username: [
+        { required: true, message: '请输入用户名', trigger: 'blur' },
+        { min: 3, max: 50, message: '用户名长度需在 3-50 位之间', trigger: 'blur' }
+      ],
+      phone: [
+        { validator: validatePhone, trigger: 'blur' }
+      ],
+      password: [
+        { required: true, message: '请输入密码', trigger: 'blur' },
+        { min: 6, message: '密码至少 6 位', trigger: 'blur' }
+      ],
+      confirmPassword: [
+        { validator: validateConfirmPassword, trigger: 'blur' }
+      ]
+    }
+    
+    const handleRegister = async () => {
+      try {
+        if (!registerForm.agreement) {
+          ElMessage.warning('请先阅读并同意服务条款')
+          return
+        }
+
+        await registerFormRef.value?.validate()
+
+        submitting.value = true
+        await register({
+          username: registerForm.username,
+          password: registerForm.password,
+          phone: registerForm.phone,
+          verifyCode: registerForm.verifyCode,
+          name: registerForm.username,
+          userType: 'student'
+        })
+        ElMessage.success('注册成功，请登录')
+        router.push('/')
+      } catch (error) {
+        if (error && error.message) {
+          return
+        }
+      } finally {
+        submitting.value = false
+      }
     }
     
     return {
       registerForm,
+      rules,
+      submitting,
       registerFormRef,
-      handleRegister
+      codeCooldown,
+      handleRegister,
+      handleSendCode
     }
   }
 }

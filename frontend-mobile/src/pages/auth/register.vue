@@ -188,9 +188,9 @@ async function handleRegister() {
     })
     
     if (result.success) {
-      uni.showToast({ title: '注册成功', icon: 'success' })
+      uni.showToast({ title: result.message || '注册成功，请登录', icon: 'success' })
       setTimeout(() => {
-        uni.switchTab({ url: '/pages/home/index' })
+        uni.navigateBack()
       }, 1500)
     } else {
       uni.showToast({ title: result.error || '注册失败', icon: 'none' })

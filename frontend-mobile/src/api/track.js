@@ -14,6 +14,24 @@ const trackApi = {
     },
 
     /**
+     * 获取轨迹历史（用于轨迹回放）
+     * @param {object} params { date | startTime | endTime | userId | vehicleNo }
+     */
+    getHistory(params) {
+        const query = { ...params }
+        if (!query.date) {
+            const source = query.startTime || query.endTime
+            if (source && typeof source === 'string') {
+                query.date = source.slice(0, 10)
+            }
+        }
+        if (!query.date) {
+            query.date = new Date().toISOString().slice(0, 10)
+        }
+        return request.get(API_ENDPOINTS.TRACK.BY_DATE, { date: query.date })
+    },
+
+    /**
      * 获取轨迹列表
      * @param {object} params { page, pageSize }
      */
@@ -33,9 +51,14 @@ const trackApi = {
     /**
      * 上传轨迹点（批量）
      * @param {array} trackPoints 轨迹点数组
+     * @param {object} options { date, userId }
      */
-    uploadTrackPoints(trackPoints) {
-        return request.post(API_ENDPOINTS.TRACK.UPLOAD, { trackPoints })
+    uploadTrackPoints(trackPoints, options = {}) {
+        return request.post(API_ENDPOINTS.TRACK.UPLOAD, {
+            userId: options.userId,
+            date: options.date,
+            trackPoints
+        })
     }
 }
 

@@ -5,6 +5,9 @@ export const API_ENDPOINTS = {
     // 认证相关
     AUTH: {
         LOGIN: '/auth/login',                    // 用户名密码登录
+        REGISTER: '/auth/register',              // 用户注册
+        LOGOUT: '/auth/logout',                  // 退出登录
+        REFRESH_TOKEN: '/auth/refresh-token',    // 刷新Token
         WECHAT_LOGIN: '/auth/wechat/login',     // 微信授权登录（需后端开发）
         USER_INFO: '/auth/userInfo',            // 获取用户信息
         SEND_CODE: '/auth/sendCode',            // 发送验证码
@@ -14,6 +17,8 @@ export const API_ENDPOINTS = {
     // 违规相关（仅用户功能）
     VIOLATION: {
         MY: '/violations/my',                    // 我的违规记录
+        REPORTS: '/violations/reports',          // 违规通报分页
+        STATISTICS: '/violations/statistics',    // 违规统计
         DETAIL: '/violations/{id}'               // 违规详情
     },
 

@@ -159,7 +159,7 @@ function goBack() {
 <style lang="scss" scoped>
 .reset-page {
   min-height: 100vh;
-  background: #F5F5F5;
+  background: #FAF7F2;
   padding: 0 32rpx;
 }
 
@@ -170,20 +170,21 @@ function goBack() {
 .title {
   font-size: 48rpx;
   font-weight: 600;
-  color: #333333;
+  color: #2D3436;
   display: block;
   margin-bottom: 12rpx;
 }
 
 .desc {
   font-size: 28rpx;
-  color: #666666;
+  color: #636E72;
 }
 
 .reset-form {
   background: #FFFFFF;
   border-radius: 24rpx;
   padding: 40rpx 32rpx;
+  box-shadow: 0 8rpx 32rpx rgba(45, 52, 54, 0.08);
 }
 
 .form-item {
@@ -192,7 +193,7 @@ function goBack() {
 
 .label {
   font-size: 28rpx;
-  color: #333333;
+  color: #2D3436;
   margin-bottom: 16rpx;
   display: block;
 }
@@ -200,11 +201,17 @@ function goBack() {
 .input {
   width: 100%;
   height: 96rpx;
-  border: 2rpx solid #E5E5E5;
-  border-radius: 12rpx;
+  border: 2rpx solid #E8E4DE;
+  border-radius: 20rpx;
   padding: 0 24rpx;
   font-size: 32rpx;
   box-sizing: border-box;
+  background: #FAF7F2;
+
+  &:focus {
+    border-color: #6B9AC4;
+    background: #FFFFFF;
+  }
 }
 
 .input-group {
@@ -219,8 +226,8 @@ function goBack() {
 .code-btn {
   width: 200rpx;
   height: 96rpx;
-  background: #007AFF;
-  border-radius: 12rpx;
+  background: linear-gradient(135deg, #7D9E87 0%, #6B9AC4 100%);
+  border-radius: 20rpx;
   color: #FFFFFF;
   font-size: 28rpx;
   display: flex;
@@ -235,6 +242,6 @@ function goBack() {
 .back-link {
   text-align: center;
   font-size: 28rpx;
-  color: #007AFF;
+  color: #7D9E87;
 }
 </style>

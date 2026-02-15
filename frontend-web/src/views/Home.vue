@@ -77,7 +77,7 @@ function checkUserAuth() {
   
   if (!isLoggedIn || !userInfoStr) {
     ElMessage.error('请先登录')
-    router.push('/login')
+    router.push('/')
     return false
   }
   
@@ -101,7 +101,7 @@ function checkUserAuth() {
     console.error('用户信息解析失败:', error)
     localStorage.removeItem('userInfo')
     localStorage.removeItem('isLoggedIn')
-    router.push('/login')
+    router.push('/')
     return false
   }
 }

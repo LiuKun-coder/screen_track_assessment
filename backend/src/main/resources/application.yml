@@ -28,3 +28,13 @@ jwt:
   expiration: 86400000
   token-header: Authorization
   token-prefix: "Bearer "
+
+sms:
+  code-expire-seconds: 300
+  resend-interval-seconds: 60
+  aliyun:
+    endpoint: dysmsapi.aliyuncs.com
+    access-key: LTAI5tDtQTAJ5m4yFr6YVdY6
+    access-key-secret: hTIoYs0KaDudcxvTOeLstxrDsvvBrv
+    sign-name: 速通互联验证码
+    template-code: "100001"

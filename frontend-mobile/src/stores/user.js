@@ -113,12 +113,8 @@ export const useUserStore = defineStore('user', () => {
         loading.value = true
         try {
             const res = await authApi.register(data)
-            const { token: accessToken, refreshToken, userInfo: user } = res.data
-
-            updateToken(accessToken, refreshToken)
-            setUser(user)
-
-            return { success: true }
+            const message = typeof res?.data === 'string' ? res.data : '注册成功'
+            return { success: true, message }
         } catch (error) {
             return { success: false, error: error.message }
         } finally {

@@ -89,7 +89,31 @@ async function fetchTrackData() {
 }
 
 function showDatePicker(type) {
-  uni.showToast({ title: '日期选择器开发中', icon: 'none' })
+  const options = []
+  for (let i = 0; i < 7; i++) {
+    const d = new Date()
+    d.setDate(d.getDate() - i)
+    options.push(formatDate(d, 'YYYY-MM-DD'))
+  }
+
+  uni.showActionSheet({
+    itemList: options,
+    success: async (res) => {
+      const selectedDate = options[res.tapIndex]
+      const oldValue = type === 'start' ? startTime.value : endTime.value
+      const oldTimePart = oldValue && oldValue.includes(' ') ? oldValue.split(' ')[1] : '00:00'
+      const nextValue = `${selectedDate} ${oldTimePart}`
+
+      if (type === 'start') {
+        startTime.value = nextValue
+      } else {
+        endTime.value = nextValue
+      }
+
+      await fetchTrackData()
+      uni.showToast({ title: '轨迹已更新', icon: 'success' })
+    }
+  })
 }
 
 function handlePlayPause() {

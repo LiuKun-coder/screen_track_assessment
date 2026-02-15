@@ -71,7 +71,7 @@
             </div>
             <div class="detail-content">
               <span class="detail-label">违规记录</span>
-              <span class="detail-value record-value">8次违规</span>
+              <span class="detail-value record-value">{{ violationCount }}次违规</span>
             </div>
           </div>
         </div>
@@ -154,22 +154,27 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import { getUserInfo, updateProfile } from '@/api/auth'
+import { uploadFile } from '@/api/upload'
+import { getStatistics } from '@/api/violation'
 
 const router = useRouter()
 
 // 个人信息相关
 const avatarUrl = ref('https://i.pravatar.cc/150?img=3')
 const avatarHover = ref(false)
-const name = ref('张三')
-const id = ref('2023123456')
-const role = ref('学生')
-const phone = ref('138****8888')
+const name = ref('')
+const id = ref('')
+const role = ref('用户')
+const phone = ref('')
 const isEditing = ref(false)
 const editName = ref(name.value)
 const editId = ref(id.value)
 const editPhone = ref(phone.value)
+const violationCount = ref(0)
 
 function changeAvatar() {
   // 创建文件选择器
@@ -195,8 +200,19 @@ function changeAvatar() {
       
       // 创建FileReader来读取文件
       const reader = new FileReader()
-      reader.onload = (e) => {
+      reader.onload = async (e) => {
         avatarUrl.value = e.target.result
+        try {
+          const uploadedUrl = await uploadFile(file)
+          await updateProfile({ avatar: uploadedUrl })
+          const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
+          userInfo.avatar = uploadedUrl
+          localStorage.setItem('userInfo', JSON.stringify(userInfo))
+          avatarUrl.value = uploadedUrl
+          ElMessage.success('头像更新成功')
+        } catch (error) {
+          ElMessage.error('头像上传失败')
+        }
       }
       reader.readAsDataURL(file)
     }
@@ -209,10 +225,21 @@ function changeAvatar() {
 }
 
 function saveEdit() {
-  name.value = editName.value
-  id.value = editId.value
-  phone.value = editPhone.value
-  isEditing.value = false
+  updateProfile({
+    name: editName.value,
+    phone: editPhone.value
+  }).then(() => {
+    name.value = editName.value
+    phone.value = editPhone.value
+    const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
+    userInfo.name = name.value
+    userInfo.phone = phone.value
+    localStorage.setItem('userInfo', JSON.stringify(userInfo))
+    isEditing.value = false
+    ElMessage.success('保存成功')
+  }).catch(() => {
+    ElMessage.error('保存失败')
+  })
 }
 
 function cancelEdit() {
@@ -227,8 +254,61 @@ function changePassword() {
 }
 
 function logout() {
+  localStorage.removeItem('token')
+  localStorage.removeItem('userInfo')
+  localStorage.removeItem('isLoggedIn')
   router.push('/')
 }
+
+function formatRole(userRole) {
+  if (userRole === 'admin' || userRole === 'super_admin') {
+    return '管理员'
+  }
+  return '学生'
+}
+
+async function loadUserProfile() {
+  try {
+    const userInfo = await getUserInfo()
+    name.value = userInfo.name || userInfo.username || '未命名用户'
+    id.value = userInfo.username || '-'
+    role.value = formatRole(userInfo.role)
+    phone.value = userInfo.phone || '-'
+    avatarUrl.value = userInfo.avatar || avatarUrl.value
+
+    editName.value = name.value
+    editId.value = id.value
+    editPhone.value = phone.value
+
+    localStorage.setItem('userInfo', JSON.stringify(userInfo))
+  } catch (error) {
+    const cached = JSON.parse(localStorage.getItem('userInfo') || '{}')
+    if (cached && Object.keys(cached).length) {
+      name.value = cached.name || cached.username || '未命名用户'
+      id.value = cached.username || '-'
+      role.value = formatRole(cached.role)
+      phone.value = cached.phone || '-'
+      avatarUrl.value = cached.avatar || avatarUrl.value
+      editName.value = name.value
+      editId.value = id.value
+      editPhone.value = phone.value
+    }
+  }
+}
+
+async function loadViolationCount() {
+  try {
+    const stats = await getStatistics()
+    violationCount.value = stats.myCount || stats.myViolations || 0
+  } catch (error) {
+    violationCount.value = 0
+  }
+}
+
+onMounted(() => {
+  loadUserProfile()
+  loadViolationCount()
+})
 </script>
 
 <style scoped>

@@ -98,22 +98,17 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { ElMessage } from 'element-plus'
+import { getUserList, updateUser, updateUserStatus } from '@/api/user'
 
-// 管理人员示例数据
-const adminList = ref([
-  { id: 1, name: '张三', role: '超级管理员', phone: '138****8888', avatar: 'https://i.pravatar.cc/150?img=1', type: '管理员' },
-  { id: 2, name: '李四', role: '管理员', phone: '139****6666', avatar: 'https://i.pravatar.cc/150?img=2', type: '管理员' },
-  { id: 3, name: '王五', role: '管理员', phone: '137****7777', avatar: 'https://i.pravatar.cc/150?img=3', type: '管理员' },
-  { id: 4, name: '赵六', role: '管理员', phone: '136****8888', avatar: 'https://i.pravatar.cc/150?img=4', type: '管理员' },
-  { id: 5, name: '钱七', role: '管理员', phone: '135****9999', avatar: 'https://i.pravatar.cc/150?img=5', type: '管理员' },
-  { id: 6, name: '孙八', role: '普通用户', phone: '134****0000', avatar: 'https://i.pravatar.cc/150?img=6', type: '普通用户' },
-  { id: 7, name: '周九', role: '普通用户', phone: '133****1111', avatar: 'https://i.pravatar.cc/150?img=7', type: '普通用户' },
-])
+const adminList = ref([])
+const total = ref(0)
+const loading = ref(false)
 
 const showAdminDialog = ref(false)
-const dialogType = ref('add')
-const dialogAdmin = ref({ id: null, name: '', phone: '', avatar: '', type: '普通用户' })
+const dialogType = ref('edit')
+const dialogAdmin = ref({ id: null, name: '', phone: '', avatar: '', type: '普通用户', status: 'active' })
 const showDeleteDialog = ref(false)
 const deleteTargetId = ref(null)
 
@@ -127,19 +122,48 @@ const filterType = ref('全部')
 const filterName = ref('')
 const filterPhone = ref('')
 
-const filteredAdminList = computed(() => {
-  let list = adminList.value
-  if (filterType.value !== '全部') list = list.filter(a => a.type === filterType.value)
-  if (filterName.value.trim()) list = list.filter(a => a.name.includes(filterName.value.trim()))
-  if (filterPhone.value.trim()) list = list.filter(a => a.phone.slice(-4) === filterPhone.value.trim())
-  return list
-})
+const totalPage = computed(() => Math.max(1, Math.ceil(total.value / pageSize)))
+const pagedAdminList = computed(() => adminList.value)
 
-const totalPage = computed(() => Math.ceil(filteredAdminList.value.length / pageSize))
-const pagedAdminList = computed(() => {
-  const start = (currentPage.value - 1) * pageSize
-  return filteredAdminList.value.slice(start, start + pageSize)
-})
+function mapUserToAdmin(user) {
+  return {
+    id: user.id,
+    name: user.name || user.username || `用户${user.id}`,
+    phone: user.phone || '-',
+    avatar: user.avatar || 'https://i.pravatar.cc/150?img=7',
+    type: user.userType === 'student' ? '普通用户' : '管理员',
+    status: user.status || 'active',
+    raw: user
+  }
+}
+
+async function fetchUsers() {
+  loading.value = true
+  try {
+    const params = {
+      page: currentPage.value,
+      pageSize
+    }
+
+    if (filterName.value.trim()) {
+      params.keyword = filterName.value.trim()
+    }
+    if (filterType.value !== '全部') {
+      params.userType = filterType.value === '管理员' ? 'staff' : 'student'
+    }
+    if (filterPhone.value.trim()) {
+      params.keyword = filterPhone.value.trim()
+    }
+
+    const result = await getUserList(params)
+    adminList.value = (result.records || []).map(mapUserToAdmin)
+    total.value = result.total || 0
+  } catch (error) {
+    ElMessage.error('获取用户列表失败')
+  } finally {
+    loading.value = false
+  }
+}
 
 function openFilterDialog() {
   showFilterDialog.value = true
@@ -148,6 +172,7 @@ function openFilterDialog() {
 function applyFilter() {
   currentPage.value = 1
   showFilterDialog.value = false
+  fetchUsers()
 }
 
 function resetFilter() {
@@ -156,20 +181,25 @@ function resetFilter() {
   filterPhone.value = ''
   currentPage.value = 1
   showFilterDialog.value = false
+  fetchUsers()
 }
 
 function prevPage() {
-  if (currentPage.value > 1) currentPage.value--
+  if (currentPage.value > 1) {
+    currentPage.value--
+    fetchUsers()
+  }
 }
 
 function nextPage() {
-  if (currentPage.value < totalPage.value) currentPage.value++
+  if (currentPage.value < totalPage.value) {
+    currentPage.value++
+    fetchUsers()
+  }
 }
 
 function openAddAdmin() {
-  dialogType.value = 'add'
-  dialogAdmin.value = { id: null, name: '', phone: '', avatar: '', type: '普通用户' }
-  showAdminDialog.value = true
+  ElMessage.info('当前版本暂不支持新增用户，请通过注册入口创建')
 }
 
 function openEditAdmin(admin) {
@@ -178,16 +208,21 @@ function openEditAdmin(admin) {
   showAdminDialog.value = true
 }
 
-function saveAdmin() {
-  if (dialogType.value === 'add') {
-    const newId = Math.max(...adminList.value.map(a => a.id)) + 1
-    adminList.value.push({ ...dialogAdmin.value, id: newId, avatar: dialogAdmin.value.avatar || 'https://i.pravatar.cc/150?img=7' })
-    currentPage.value = totalPage.value
-  } else {
-    const idx = adminList.value.findIndex(a => a.id === dialogAdmin.value.id)
-    if (idx !== -1) adminList.value[idx] = { ...dialogAdmin.value }
+async function saveAdmin() {
+  try {
+    await updateUser(dialogAdmin.value.id, {
+      name: dialogAdmin.value.name,
+      phone: dialogAdmin.value.phone,
+      avatar: dialogAdmin.value.avatar,
+      userType: dialogAdmin.value.type === '管理员' ? 'staff' : 'student',
+      status: dialogAdmin.value.status
+    })
+    ElMessage.success('保存成功')
+    showAdminDialog.value = false
+    fetchUsers()
+  } catch (error) {
+    ElMessage.error('保存失败')
   }
-  showAdminDialog.value = false
 }
 
 function openDeleteAdmin(id) {
@@ -195,15 +230,24 @@ function openDeleteAdmin(id) {
   showDeleteDialog.value = true
 }
 
-function confirmDeleteAdmin() {
-  adminList.value = adminList.value.filter(a => a.id !== deleteTargetId.value)
-  if (currentPage.value > totalPage.value) currentPage.value = totalPage.value
-  showDeleteDialog.value = false
+async function confirmDeleteAdmin() {
+  try {
+    await updateUserStatus(deleteTargetId.value, 'disabled')
+    ElMessage.success('已禁用用户')
+    showDeleteDialog.value = false
+    fetchUsers()
+  } catch (error) {
+    ElMessage.error('操作失败')
+  }
 }
 
 function cancelDeleteAdmin() {
   showDeleteDialog.value = false
 }
+
+onMounted(() => {
+  fetchUsers()
+})
 </script>
 
 <style scoped>

@@ -3,6 +3,7 @@ package org.example.sc_backend.controller;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import org.example.sc_backend.common.utils.AdminAuthUtils;
 import org.example.sc_backend.common.utils.Result;
 import org.example.sc_backend.dto.AppealSubmitDTO;
 import org.example.sc_backend.entity.BizAppeal;
@@ -57,9 +58,11 @@ public class AppealController {
      */
     @GetMapping("/list")
     public Result<IPage<BizAppeal>> getAllAppeals(
+            HttpServletRequest request,
             @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer pageSize) {
+        AdminAuthUtils.requireAdmin(request);
         IPage<BizAppeal> result = appealService.getAllAppeals(status, page, pageSize);
         return Result.success(result);
     }
@@ -73,6 +76,7 @@ public class AppealController {
             @PathVariable Long id,
             @RequestParam String status,
             @RequestParam String replyContent) {
+        AdminAuthUtils.requireAdmin(request);
         Long handlerId = (Long) request.getAttribute("userId");
         appealService.handleAppeal(id, handlerId, status, replyContent);
         return Result.success();

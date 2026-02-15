@@ -80,6 +80,21 @@ public class JwtUtils {
     }
 
     /**
+     * 从Token中获取用户名
+     */
+    public String getUsernameFromToken(String token) {
+        Claims claims = getClaimsFromToken(token);
+        if (claims != null) {
+            String username = claims.get("username", String.class);
+            if (username != null && !username.isBlank()) {
+                return username;
+            }
+            return claims.getSubject();
+        }
+        return null;
+    }
+
+    /**
      * 验证Token是否有效
      */
     public boolean validateToken(String token) {
