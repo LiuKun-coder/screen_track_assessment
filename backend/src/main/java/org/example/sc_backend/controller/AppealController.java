@@ -48,8 +48,12 @@ public class AppealController {
      * 获取申诉详情
      */
     @GetMapping("/{id}")
-    public Result<BizAppeal> getAppealDetail(@PathVariable Long id) {
+    public Result<BizAppeal> getAppealDetail(HttpServletRequest request, @PathVariable Long id) {
+        Long currentUserId = (Long) request.getAttribute("userId");
         BizAppeal appeal = appealService.getAppealDetail(id);
+        if (!java.util.Objects.equals(appeal.getUserId(), currentUserId)) {
+            AdminAuthUtils.requireAdmin(request);
+        }
         return Result.success(appeal);
     }
 

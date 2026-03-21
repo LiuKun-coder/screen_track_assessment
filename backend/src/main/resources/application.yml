@@ -7,8 +7,8 @@ spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/scs_db?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
-    username: root
-    password: "123456"
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD}
 
   # 文件上传配置
   servlet:
@@ -24,7 +24,7 @@ mybatis-plus:
 
 # 自定义JWT配置
 jwt:
-  secret: scs_campus_violation_secret_key_2024
+  secret: ${JWT_SECRET}
   expiration: 86400000
   token-header: Authorization
   token-prefix: "Bearer "
@@ -34,7 +34,7 @@ sms:
   resend-interval-seconds: 60
   aliyun:
     endpoint: dysmsapi.aliyuncs.com
-    access-key: LTAI5tDtQTAJ5m4yFr6YVdY6
-    access-key-secret: hTIoYs0KaDudcxvTOeLstxrDsvvBrv
+    access-key: ${ALIYUN_ACCESS_KEY}
+    access-key-secret: ${ALIYUN_ACCESS_SECRET}
     sign-name: 速通互联验证码
     template-code: "100001"

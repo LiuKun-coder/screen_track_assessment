@@ -405,10 +405,19 @@ const initCharts = () => {
         borderColor: '#0ea5e9',
         textStyle: { color: '#fff' },
         formatter: (params) => {
+          // 简单的 HTML 实体转义防止 XSS
+          const escapeHtml = (unsafe) => {
+            return (unsafe || '').toString()
+              .replace(/&/g, "&amp;")
+              .replace(/</g, "&lt;")
+              .replace(/>/g, "&gt;")
+              .replace(/"/g, "&quot;")
+              .replace(/'/g, "&#039;");
+          };
           if (params.seriesType === 'effectScatter') {
-             return `${params.marker} ${params.name}<br/>坐标: ${params.value[0].toFixed(3)}, ${params.value[1].toFixed(3)}`;
+             return `${params.marker} ${escapeHtml(params.name)}<br/>坐标: ${params.value[0].toFixed(3)}, ${params.value[1].toFixed(3)}`;
           }
-          return params.name;
+          return escapeHtml(params.name);
         }
       },
       geo: {

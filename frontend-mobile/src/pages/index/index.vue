@@ -13,9 +13,7 @@ export default {
     return {
       title: 'Hello',
     }
-  },
-  onLoad() {},
-  methods: {},
+  }
 }
 </script>
 

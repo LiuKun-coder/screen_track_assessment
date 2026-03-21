@@ -108,19 +108,20 @@ async function fetchViolations(reset = false) {
       pageSize: pagination.pageSize
     })
     
-    const { list, total } = res.data || {}
-    violations.value = reset ? (list || []) : [...violations.value, ...(list || [])]
-    pagination.total = total || 0
-    pagination.page++
+    const list = res.records || res.data?.records || []
+    const total = res.total || res.data?.total || 0
+    
+    violations.value = reset ? list : [...violations.value, ...list]
+    pagination.total = total
+    if (list.length > 0) {
+      pagination.page++
+    }
   } catch (error) {
-    // 模拟数据
-    const mockData = [
-      { id: 1, typeName: '超速行驶', description: '在教学区路段超速行驶', place: '东门', status: 'pending', createTime: Date.now() - 3600000 },
-      { id: 2, typeName: '违规停放', description: '在非停车区域停放', place: '宿舍区', status: 'processed', createTime: Date.now() - 7200000 },
-      { id: 3, typeName: '闯红灯', description: '闯红灯通过路口', place: '西门', status: 'pending', createTime: Date.now() - 10800000 }
-    ]
-    violations.value = mockData
-    pagination.total = 3
+    console.error('获取违规列表失败:', error)
+    uni.showToast({
+      title: '获取数据失败',
+      icon: 'none'
+    })
   } finally {
     loading.value = false
     refreshing.value = false

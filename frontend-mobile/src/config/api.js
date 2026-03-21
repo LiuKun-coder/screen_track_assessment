@@ -45,9 +45,8 @@ export const API_ENDPOINTS = {
 
     // 消息通知相关（需后端开发）
     NOTIFICATION: {
-        SUBSCRIBE: '/notification/subscribe',    // 订阅推送
-        LIST: '/notifications',                  // 获取消息列表
-        READ: '/notifications/{id}/read'         // 标记消息已读
+        LIST: '/notifications',                  // 获取通知列表
+        READ: '/notifications/{id}/read'         // 标记已读
     },
 
     // 文件上传

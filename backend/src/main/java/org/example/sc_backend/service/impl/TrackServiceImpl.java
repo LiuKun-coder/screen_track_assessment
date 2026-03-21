@@ -9,6 +9,8 @@ import org.example.sc_backend.dto.TrackUploadDTO;
 import org.example.sc_backend.entity.BizTrack;
 import org.example.sc_backend.mapper.BizTrackMapper;
 import org.example.sc_backend.service.TrackService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -27,6 +29,8 @@ import java.util.List;
  */
 @Service
 public class TrackServiceImpl implements TrackService {
+
+    private static final Logger log = LoggerFactory.getLogger(TrackServiceImpl.class);
 
     @Autowired
     private BizTrackMapper trackMapper;
@@ -145,17 +149,18 @@ public class TrackServiceImpl implements TrackService {
         }
         try {
             return LocalDateTime.parse(value, DateTimeFormatter.ISO_DATE_TIME);
-        } catch (DateTimeParseException ignored) {
+        } catch (DateTimeParseException ignored1) {
+            try {
+                return LocalDateTime.parse(value, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            } catch (DateTimeParseException ignored2) {
+                try {
+                    return LocalDateTime.parse(value, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+                } catch (DateTimeParseException e) {
+                    log.error("轨迹时间解析失败，原始数据: {}", value, e);
+                    return null;
+                }
+            }
         }
-        try {
-            return LocalDateTime.parse(value, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-        } catch (DateTimeParseException ignored) {
-        }
-        try {
-            return LocalDateTime.parse(value, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
-        } catch (DateTimeParseException ignored) {
-        }
-        return null;
     }
 
     private BigDecimal calculateDistance(List<TrackUploadDTO.TrackPointDTO> points) {
