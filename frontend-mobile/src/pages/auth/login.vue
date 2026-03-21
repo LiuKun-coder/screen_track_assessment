@@ -130,6 +130,7 @@ onMounted(() => {
 // 表单数据
 const form = ref({
   username: '',
+  phone: '',
   password: '',
   code: ''
 })
@@ -151,15 +152,16 @@ const canSubmit = computed(() => {
 // 发送验证码
 async function sendCode() {
   if (countdown.value > 0) return
-  
-  if (!isValidPhone(form.value.phone)) {
+
+  const phone = form.value.phone || form.value.username
+  if (!isValidPhone(phone)) {
     uni.showToast({ title: '请输入正确的手机号', icon: 'none' })
     return
   }
-  
+
   try {
     await authApi.sendCode({ 
-      phone: form.value.phone, 
+      phone,
       type: 'login' 
     })
     
@@ -181,6 +183,11 @@ async function sendCode() {
 // 登录
 async function handleLogin() {
   if (!canSubmit.value || loading.value) return
+
+  if (loginType.value === 'code') {
+    uni.showToast({ title: '验证码登录暂未开通，请使用密码登录', icon: 'none' })
+    return
+  }
   
   loading.value = true
   

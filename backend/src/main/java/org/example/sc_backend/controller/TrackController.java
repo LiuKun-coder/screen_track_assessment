@@ -2,7 +2,9 @@ package org.example.sc_backend.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import jakarta.servlet.http.HttpServletRequest;
+import org.example.sc_backend.common.utils.AdminAuthUtils;
 import org.example.sc_backend.common.utils.Result;
+import org.example.sc_backend.dto.TrackUploadDTO;
 import org.example.sc_backend.entity.BizTrack;
 import org.example.sc_backend.service.TrackService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,9 +30,15 @@ public class TrackController {
     @GetMapping("/byDate")
     public Result<List<BizTrack>> getTracksByDate(
             HttpServletRequest request,
-            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date) {
-        Long userId = (Long) request.getAttribute("userId");
-        List<BizTrack> tracks = trackService.getUserTracksByDate(userId, date);
+            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date,
+            @RequestParam(required = false) Long userId) {
+        Long currentUserId = (Long) request.getAttribute("userId");
+        Long targetUserId = currentUserId;
+        if (userId != null && !userId.equals(currentUserId)) {
+            AdminAuthUtils.requireAdmin(request);
+            targetUserId = userId;
+        }
+        List<BizTrack> tracks = trackService.getUserTracksByDate(targetUserId, date);
         return Result.success(tracks);
     }
 
@@ -53,6 +61,17 @@ public class TrackController {
     @GetMapping("/{id}")
     public Result<BizTrack> getTrackDetail(@PathVariable Long id) {
         BizTrack track = trackService.getTrackDetail(id);
+        return Result.success(track);
+    }
+
+    /**
+     * 上传轨迹点
+     */
+    @PostMapping("/upload")
+    public Result<BizTrack> uploadTrackPoints(HttpServletRequest request,
+                                              @RequestBody TrackUploadDTO uploadDTO) {
+        Long userId = (Long) request.getAttribute("userId");
+        BizTrack track = trackService.uploadTrackPoints(userId, uploadDTO);
         return Result.success(track);
     }
 }

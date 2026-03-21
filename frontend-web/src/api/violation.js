@@ -1,5 +1,16 @@
 import request from '@/utils/request'
 
+function normalizeViolationQuery(params = {}) {
+    const normalized = { ...params }
+    if (normalized.startTime && !normalized.startDate) {
+        normalized.startDate = normalized.startTime
+    }
+    if (normalized.endTime && !normalized.endDate) {
+        normalized.endDate = normalized.endTime
+    }
+    return normalized
+}
+
 /**
  * 获取违规列表（大厅/管理员）
  * @param {Object} params - { page, pageSize, type, status, startTime, endTime }
@@ -9,7 +20,7 @@ export function getViolationList(params) {
     return request({
         url: '/violations/reports',
         method: 'get',
-        params
+        params: normalizeViolationQuery(params)
     })
 }
 
@@ -62,5 +73,16 @@ export function updateViolation(id, data) {
         url: `/violations/${id}`,
         method: 'put',
         data
+    })
+}
+
+/**
+ * 获取违规统计
+ * @returns {Promise}
+ */
+export function getStatistics() {
+    return request({
+        url: '/violations/statistics',
+        method: 'get'
     })
 }

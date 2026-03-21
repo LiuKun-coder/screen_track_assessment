@@ -33,10 +33,9 @@
         </div>
       </div>
       <div class="track-map">
-        <div class="track-map-placeholder">
-          <div class="map-title">用于展示路线回溯的学校地图</div>
-          <div class="map-content">{{ mapData }}</div>
-        </div>
+        <div ref="mapContainerRef" class="map-canvas"></div>
+        <div v-if="!mapReady" class="map-notice">{{ mapData }}</div>
+        <div v-else class="map-status">{{ mapData }}</div>
       </div>
     </div>
     
@@ -62,19 +61,21 @@
         <div class="fence-info">
           <div class="fence-item">
             <span class="fence-label">围栏名称：</span>
-            <span>主校区安全围栏</span>
+            <span>{{ currentFence?.name || '未配置' }}</span>
           </div>
           <div class="fence-item">
             <span class="fence-label">围栏范围：</span>
-            <span>东门-西门-南门-北门</span>
+            <span>{{ currentFence?.rangeDesc || '未配置范围描述' }}</span>
           </div>
           <div class="fence-item">
             <span class="fence-label">围栏状态：</span>
-            <span class="fence-status active">启用中</span>
+            <span class="fence-status" :class="{ active: (currentFence?.status || 'inactive') === 'active' }">
+              {{ (currentFence?.status || 'inactive') === 'active' ? '启用中' : '已禁用' }}
+            </span>
           </div>
           <div class="fence-item">
             <span class="fence-label">创建时间：</span>
-            <span>2024-01-01 00:00:00</span>
+            <span>{{ currentFence?.createTime || '--' }}</span>
           </div>
         </div>
         <div class="track-dialog-actions">
@@ -123,11 +124,11 @@
               </div>
               <div class="user-info">
                 <div class="user-name">{{ user.name }}</div>
-                <div class="user-id">{{ user.type === 'student' ? '学号' : '工号' }}: {{ user.id }}</div>
-                <div class="user-department">{{ user.department }}</div>
+                <div class="user-id">用户ID: {{ user.id }}</div>
+                <div class="user-department">{{ user.department || '未填写院系' }}</div>
               </div>
-              <div class="user-type" :class="user.type">
-                {{ user.type === 'student' ? '学生' : user.type === 'teacher' ? '教师' : '职工' }}
+              <div class="user-type" :class="user.userType || 'staff'">
+                {{ formatUserType(user.userType) }}
               </div>
             </div>
           </div>
@@ -158,8 +159,8 @@
             <div class="user-info">
               <div class="user-name">{{ selectedUser.name }}</div>
               <div class="user-details">
-                <span>{{ selectedUser.type === 'student' ? '学号' : '工号' }}: {{ selectedUser.id }}</span>
-                <span>{{ selectedUser.department }}</span>
+                <span>用户ID: {{ selectedUser.id }}</span>
+                <span>{{ selectedUser.department || '未填写院系' }}</span>
               </div>
             </div>
           </div>
@@ -219,9 +220,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
+import AMapLoader from '@amap/amap-jsapi-loader'
 import { getTrackByDate } from '@/api/track'
 import { getFenceList, addFence, updateFence } from '@/api/fence'
+import { searchUsers } from '@/api/user'
 import { ElMessage } from 'element-plus'
 
 // Props 接收违规信息和用户角色
@@ -242,10 +245,21 @@ const selectedDate = ref('')
 const showFenceDialog = ref(false)
 const showEditFenceDialog = ref(false)
 const showUserTrackDialog = ref(false)
-const mapData = ref('学校地图加载中...')
+const mapData = ref('地图加载中...')
 const currentViolationInfo = ref(props.violationInfo)
 const userRole = ref(props.userRole)
 const loading = ref(false)
+const mapReady = ref(false)
+
+const mapContainerRef = ref(null)
+const mapInstance = shallowRef(null)
+const amapLib = shallowRef(null)
+const currentPolyline = shallowRef(null)
+const startMarker = shallowRef(null)
+const endMarker = shallowRef(null)
+const fencePolygon = shallowRef(null)
+
+const defaultCenter = [117.190182, 34.219152]
 
 // 当前轨迹数据
 const trackPoints = ref([])
@@ -257,23 +271,7 @@ const currentFence = ref(null)
 const userSearchKeyword = ref('')
 const selectedUser = ref(null)
 const userTrackDate = ref('')
-const allUsers = ref([
-  { id: '2021001', name: '张三', type: 'student', department: '计算机学院' },
-  { id: '2021002', name: '李四', type: 'student', department: '电子工程学院' },
-  { id: '2021003', name: '王五', type: 'student', department: '机械工程学院' },
-  { id: '2021004', name: '赵六', type: 'student', department: '化学工程学院' },
-  { id: '2021005', name: '钱七', type: 'student', department: '物理学院' },
-  { id: 'T001', name: '刘老师', type: 'teacher', department: '计算机学院' },
-  { id: 'T002', name: '陈老师', type: 'teacher', department: '电子工程学院' },
-  { id: 'T003', name: '黄老师', type: 'teacher', department: '机械工程学院' },
-  { id: 'S001', name: '孙职工', type: 'staff', department: '后勤服务中心' },
-  { id: 'S002', name: '周职工', type: 'staff', department: '图书馆' },
-  { id: '2021006', name: '吴八', type: 'student', department: '数学学院' },
-  { id: '2021007', name: '郑九', type: 'student', department: '外语学院' },
-  { id: 'T004', name: '马老师', type: 'teacher', department: '数学学院' },
-  { id: 'T005', name: '朱老师', type: 'teacher', department: '外语学院' },
-  { id: 'S003', name: '许职工', type: 'staff', department: '保卫处' }
-])
+const allUsers = ref([])
 
 // 过滤用户列表
 const filteredUsers = ref([])
@@ -284,17 +282,172 @@ const fenceRange = ref('东门-西门-南门-北门')
 const fenceStatus = ref('启用')
 const fenceId = ref(null)
 
+function resolveMapKey() {
+  return process.env.VUE_APP_AMAP_KEY || localStorage.getItem('AMAP_WEB_KEY') || window.AMAP_WEB_KEY || ''
+}
+
+function formatUserType(userType) {
+  if (userType === 'student') return '学生'
+  if (userType === 'teacher') return '教师'
+  return '职工'
+}
+
+function normalizePoint(point) {
+  const latitude = Number(point.latitude ?? point.lat)
+  const longitude = Number(point.longitude ?? point.lng)
+  if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+    return [longitude, latitude]
+  }
+  return null
+}
+
+function parseTrackPoints(tracks) {
+  const points = []
+  tracks.forEach(track => {
+    if (!track?.trackPoints) return
+    try {
+      const rawPoints = JSON.parse(track.trackPoints)
+      if (Array.isArray(rawPoints)) {
+        rawPoints.forEach(point => {
+          const normalized = normalizePoint(point)
+          if (normalized) {
+            points.push(normalized)
+          }
+        })
+      }
+    } catch (error) {
+      console.error('轨迹点解析失败:', error)
+    }
+  })
+  return points
+}
+
+function parseFenceCoordinates(coordinatesStr) {
+  if (!coordinatesStr) return []
+  try {
+    const list = JSON.parse(coordinatesStr)
+    if (!Array.isArray(list)) return []
+    return list
+      .map(item => {
+        const lat = Number(item.lat ?? item.latitude)
+        const lng = Number(item.lng ?? item.longitude)
+        return Number.isFinite(lat) && Number.isFinite(lng) ? [lng, lat] : null
+      })
+      .filter(Boolean)
+  } catch (error) {
+    console.error('围栏坐标解析失败:', error)
+    return []
+  }
+}
+
+function clearTrackOverlay() {
+  if (!mapInstance.value) return
+  ;[currentPolyline.value, startMarker.value, endMarker.value].forEach(overlay => {
+    if (overlay) {
+      mapInstance.value.remove(overlay)
+    }
+  })
+  currentPolyline.value = null
+  startMarker.value = null
+  endMarker.value = null
+}
+
+function clearFenceOverlay() {
+  if (!mapInstance.value || !fencePolygon.value) return
+  mapInstance.value.remove(fencePolygon.value)
+  fencePolygon.value = null
+}
+
+function drawFenceOnMap() {
+  if (!mapReady.value || !currentFence.value) return
+  const coordinates = parseFenceCoordinates(currentFence.value.coordinates)
+  clearFenceOverlay()
+  if (!coordinates.length) return
+  fencePolygon.value = new amapLib.value.Polygon({
+    path: coordinates,
+    strokeColor: '#C9735D',
+    strokeWeight: 3,
+    strokeOpacity: 0.9,
+    fillColor: '#E9F3FC',
+    fillOpacity: 0.35
+  })
+  mapInstance.value.add(fencePolygon.value)
+}
+
+function drawTrackOnMap() {
+  if (!mapReady.value) return
+  clearTrackOverlay()
+  if (!trackPoints.value.length) return
+
+  currentPolyline.value = new amapLib.value.Polyline({
+    path: trackPoints.value,
+    strokeColor: '#6B9AC4',
+    strokeWeight: 6,
+    strokeOpacity: 0.95,
+    lineJoin: 'round',
+    lineCap: 'round'
+  })
+
+  startMarker.value = new amapLib.value.Marker({
+    position: trackPoints.value[0],
+    title: '起点'
+  })
+
+  endMarker.value = new amapLib.value.Marker({
+    position: trackPoints.value[trackPoints.value.length - 1],
+    title: '终点'
+  })
+
+  mapInstance.value.add([currentPolyline.value, startMarker.value, endMarker.value])
+  if (fencePolygon.value) {
+    mapInstance.value.add(fencePolygon.value)
+  }
+  mapInstance.value.setFitView([currentPolyline.value, startMarker.value, endMarker.value, fencePolygon.value].filter(Boolean))
+}
+
+async function initMap() {
+  const key = resolveMapKey()
+  if (!key) {
+    mapData.value = '未配置高德地图 Key。请设置 VUE_APP_AMAP_KEY 或 localStorage.AMAP_WEB_KEY'
+    return
+  }
+  try {
+    amapLib.value = await AMapLoader.load({
+      key,
+      version: '2.0',
+      plugins: ['AMap.Scale', 'AMap.ToolBar']
+    })
+    mapInstance.value = new amapLib.value.Map(mapContainerRef.value, {
+      zoom: 15,
+      center: defaultCenter,
+      mapStyle: 'amap://styles/normal'
+    })
+    mapInstance.value.addControl(new amapLib.value.Scale())
+    mapInstance.value.addControl(new amapLib.value.ToolBar())
+    mapReady.value = true
+    mapData.value = '请先选择日期查看轨迹'
+    drawFenceOnMap()
+    if (trackPoints.value.length) {
+      drawTrackOnMap()
+    }
+  } catch (error) {
+    console.error('地图初始化失败:', error)
+    mapData.value = '地图加载失败，请检查 Key、域名白名单或网络连接'
+  }
+}
+
 // 获取电子围栏列表
 async function fetchFenceList() {
   try {
-    const result = await getFenceList({ page: 1, pageSize: 1 })
-    if (result.records && result.records.length > 0) {
-      const fence = result.records[0]
+    const result = await getFenceList()
+    if (Array.isArray(result) && result.length > 0) {
+      const fence = result[0]
       currentFence.value = fence
       fenceId.value = fence.id
       fenceName.value = fence.name
-      fenceRange.value = fence.description || '东门-西门-南门-北门'
+      fenceRange.value = fence.rangeDesc || '东门-西门-南门-北门'
       fenceStatus.value = fence.status === 'active' ? '启用' : '禁用'
+      drawFenceOnMap()
     }
   } catch (error) {
     console.error('获取电子围栏失败:', error)
@@ -302,39 +455,43 @@ async function fetchFenceList() {
 }
 
 // 从后端获取轨迹数据
-async function fetchTrackByDate(date) {
+async function fetchTrackByDate(date, targetUserId = null, displayName = null) {
+  if (!date) {
+    trackPoints.value = []
+    clearTrackOverlay()
+    mapData.value = '请选择日期后查看轨迹'
+    return
+  }
   loading.value = true
   try {
-    const result = await getTrackByDate({ date })
-    if (result && result.trackPoints) {
-      // 解析JSON轨迹点
-      try {
-        trackPoints.value = JSON.parse(result.trackPoints)
-      } catch (e) {
-        trackPoints.value = []
-      }
-      mapData.value = `正在显示 ${date} 的路线回溯轨迹（共 ${trackPoints.value.length} 个轨迹点）`
+    const params = targetUserId ? { date, userId: targetUserId } : { date }
+    const result = await getTrackByDate(params)
+    const tracks = Array.isArray(result) ? result : []
+    trackPoints.value = parseTrackPoints(tracks)
+    if (trackPoints.value.length > 0) {
+      const prefix = displayName ? `${displayName} 在 ${date}` : `${date}`
+      mapData.value = `正在显示 ${prefix} 的路线回溯轨迹（共 ${trackPoints.value.length} 个轨迹点）`
+      drawTrackOnMap()
     } else {
       mapData.value = `${date} 没有轨迹数据`
-      trackPoints.value = []
+      clearTrackOverlay()
     }
   } catch (error) {
     console.error('获取轨迹数据失败:', error)
-    mapData.value = `正在显示 ${date} 的路线回溯轨迹`
+    mapData.value = `获取 ${date} 轨迹失败`
     trackPoints.value = []
+    clearTrackOverlay()
   } finally {
     loading.value = false
   }
 }
 
 // 监听 props 变化
-import { watch } from 'vue'
 watch(() => props.violationInfo, (newInfo) => {
   currentViolationInfo.value = newInfo
   if (newInfo) {
-    selectedDate.value = newInfo.time.split(' ')[0]
-    mapData.value = `正在显示 ${newInfo.time} 在 ${newInfo.detail} 的违规轨迹回溯`
-    // 尝试从后端获取轨迹
+    selectedDate.value = (newInfo.time || '').split(' ')[0]
+    mapData.value = `正在显示 ${newInfo.time || ''} 在 ${newInfo.detail || ''} 的违规轨迹回溯`
     fetchTrackByDate(selectedDate.value)
   }
 }, { immediate: true })
@@ -356,6 +513,10 @@ function selectDate() {
 
 function viewFence() {
   showFenceDialog.value = true
+  drawFenceOnMap()
+  if (mapReady.value && fencePolygon.value) {
+    mapInstance.value.setFitView([fencePolygon.value])
+  }
 }
 
 function editFence() {
@@ -372,7 +533,7 @@ function closeEditFenceDialog() {
 
 function clearViolationInfo() {
   currentViolationInfo.value = null
-  mapData.value = '学校地图加载中...'
+  mapData.value = '请先选择日期查看轨迹'
 }
 
 // 保存电子围栏
@@ -380,7 +541,8 @@ async function saveFence() {
   try {
     const fenceData = {
       name: fenceName.value,
-      description: fenceRange.value,
+      rangeDesc: fenceRange.value,
+      coordinates: currentFence.value?.coordinates || null,
       status: fenceStatus.value === '启用' ? 'active' : 'inactive'
     }
     
@@ -421,12 +583,30 @@ function handleUserSearch() {
     filteredUsers.value = []
     return
   }
-  
-  filteredUsers.value = allUsers.value.filter(user => 
-    user.name.toLowerCase().includes(keyword) ||
-    user.id.toLowerCase().includes(keyword) ||
-    user.department.toLowerCase().includes(keyword)
-  )
+
+  searchUsers(keyword)
+    .then(result => {
+      const list = Array.isArray(result) ? result : []
+      allUsers.value = list.map(item => ({
+        id: item.id,
+        name: item.name || item.username || `用户${item.id}`,
+        username: item.username,
+        department: item.department,
+        userType: item.userType,
+        role: item.role,
+        phone: item.phone
+      }))
+      filteredUsers.value = allUsers.value.filter(user => {
+        const plainId = String(user.id)
+        return (user.name || '').toLowerCase().includes(keyword)
+          || (user.username || '').toLowerCase().includes(keyword)
+          || (user.department || '').toLowerCase().includes(keyword)
+          || plainId.includes(keyword)
+      })
+    })
+    .catch(() => {
+      filteredUsers.value = []
+    })
 }
 
 function selectUser(user) {
@@ -444,20 +624,29 @@ function viewUserTrack() {
     ElMessage.warning('请选择用户和日期')
     return
   }
-  
-  // 更新地图显示
-  mapData.value = `正在显示 ${selectedUser.value.name} (${selectedUser.value.id}) 在 ${userTrackDate.value} 的轨迹回溯`
-  
-  // 关闭对话框
+
+  mapData.value = `正在显示 ${selectedUser.value.name} (ID:${selectedUser.value.id}) 在 ${userTrackDate.value} 的轨迹回溯`
+
   closeUserTrackDialog()
-  
-  // 清空违规信息面板
   currentViolationInfo.value = null
+  fetchTrackByDate(userTrackDate.value, selectedUser.value.id, selectedUser.value.name)
 }
 
 // 组件加载时获取电子围栏
 onMounted(() => {
+  nextTick(() => {
+    initMap()
+  })
   fetchFenceList()
+})
+
+onBeforeUnmount(() => {
+  clearTrackOverlay()
+  clearFenceOverlay()
+  if (mapInstance.value) {
+    mapInstance.value.destroy()
+    mapInstance.value = null
+  }
 })
 </script>
 
@@ -595,42 +784,46 @@ onMounted(() => {
 
 .track-map {
   flex: 1;
+  position: relative;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  min-height: 480px;
 }
 
-.track-map-placeholder {
+.map-canvas {
   width: 100%;
   height: 100%;
-  min-height: 360px;
+  min-height: 480px;
   background: #FFFCF8;
   border-radius: 20px;
   border: 1px solid #E8E4DE;
+  box-shadow: 0 2px 12px rgba(45, 52, 54, 0.06);
+}
+
+.map-notice {
+  position: absolute;
+  inset: 0;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
-  color: #2D3436;
   text-align: center;
-  box-shadow: 0 2px 12px rgba(45, 52, 54, 0.06);
-  transition: all 0.2s ease;
-}
-
-.track-map-placeholder:hover {
-  box-shadow: 0 4px 20px rgba(45, 52, 54, 0.08);
-  border-color: #6B9AC4;
-}
-
-.map-title {
-  font-weight: 600;
-  margin-bottom: 16px;
-}
-
-.map-content {
-  font-size: 16px;
+  padding: 0 24px;
   color: #7D9E87;
+  font-size: 15px;
+  font-weight: 500;
+  pointer-events: none;
+}
+
+.map-status {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  max-width: calc(100% - 32px);
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid #E8E4DE;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: #2D3436;
   font-weight: 500;
 }
 

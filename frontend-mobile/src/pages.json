@@ -62,6 +62,30 @@
 			}
 		},
 		{
+			"path": "pages/appeal/submit",
+			"style": {
+				"navigationBarTitleText": "提交申诉"
+			}
+		},
+		{
+			"path": "pages/appeal/list",
+			"style": {
+				"navigationBarTitleText": "我的申诉"
+			}
+		},
+		{
+			"path": "pages/appeal/detail",
+			"style": {
+				"navigationBarTitleText": "申诉详情"
+			}
+		},
+		{
+			"path": "pages/track/history",
+			"style": {
+				"navigationBarTitleText": "轨迹历史"
+			}
+		},
+		{
 			"path": "pages/profile/index",
 			"style": {
 				"navigationBarTitleText": "个人中心"

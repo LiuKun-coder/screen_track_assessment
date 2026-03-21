@@ -727,9 +727,41 @@ async function submitProcess() {
   }
 }
 
-function batchProcess() {
+async function batchProcess() {
   if (selectedItems.value.length === 0) return
-  ElMessage.warning('批量处理功能暂未实现')
+
+  const toProcessItems = allItems.value.filter(item =>
+    selectedItems.value.includes(item.id) && item.status !== 'completed'
+  )
+
+  if (toProcessItems.length === 0) {
+    ElMessage.warning('所选项均已处理完成')
+    return
+  }
+
+  try {
+    const requests = toProcessItems.map(item =>
+      handleAppeal(item.id, {
+        status: 'approved',
+        replyContent: '已批量处理：申诉成立，请遵守校园交通管理规定。'
+      })
+    )
+
+    const results = await Promise.allSettled(requests)
+    const successCount = results.filter(r => r.status === 'fulfilled').length
+    const failCount = results.length - successCount
+
+    if (successCount > 0) {
+      ElMessage.success(`批量处理完成：成功 ${successCount} 条${failCount > 0 ? `，失败 ${failCount} 条` : ''}`)
+    } else {
+      ElMessage.error('批量处理失败，请稍后重试')
+    }
+
+    selectedItems.value = []
+    fetchAppealList()
+  } catch (error) {
+    ElMessage.error('批量处理失败')
+  }
 }
 
 function refreshList() {

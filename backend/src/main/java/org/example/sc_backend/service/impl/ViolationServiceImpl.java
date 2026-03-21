@@ -15,7 +15,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 违规管理服务实现类
@@ -50,6 +53,12 @@ public class ViolationServiceImpl implements ViolationService {
                     .like(BizViolation::getPlace, queryDTO.getKeyword())
             );
         }
+        if (StringUtils.hasText(queryDTO.getStartDate())) {
+            wrapper.ge(BizViolation::getViolationTime, queryDTO.getStartDate());
+        }
+        if (StringUtils.hasText(queryDTO.getEndDate())) {
+            wrapper.le(BizViolation::getViolationTime, queryDTO.getEndDate());
+        }
 
         wrapper.orderByDesc(BizViolation::getCreateTime);
 
@@ -59,12 +68,28 @@ public class ViolationServiceImpl implements ViolationService {
     }
 
     @Override
-    public IPage<ViolationVO> getMyViolations(Long userId, Integer page, Integer pageSize) {
+    public IPage<ViolationVO> getMyViolations(Long userId, Integer page, Integer pageSize,
+                                              String type, String status,
+                                              LocalDateTime startTime, LocalDateTime endTime) {
         Page<BizViolation> p = new Page<>(page, pageSize);
         LambdaQueryWrapper<BizViolation> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(BizViolation::getUserId, userId)
-                .eq(BizViolation::getDeleted, 0)
-                .orderByDesc(BizViolation::getCreateTime);
+                .eq(BizViolation::getDeleted, 0);
+
+        if (StringUtils.hasText(type)) {
+            wrapper.eq(BizViolation::getType, type);
+        }
+        if (StringUtils.hasText(status)) {
+            wrapper.eq(BizViolation::getStatus, status);
+        }
+        if (startTime != null) {
+            wrapper.ge(BizViolation::getViolationTime, startTime);
+        }
+        if (endTime != null) {
+            wrapper.le(BizViolation::getViolationTime, endTime);
+        }
+
+        wrapper.orderByDesc(BizViolation::getCreateTime);
 
         IPage<BizViolation> resultPage = violationMapper.selectPage(p, wrapper);
         return resultPage.convert(this::toVO);
@@ -90,6 +115,35 @@ public class ViolationServiceImpl implements ViolationService {
     @Override
     public void updateViolation(BizViolation violation) {
         violationMapper.updateById(violation);
+    }
+
+    @Override
+    public Map<String, Object> getStatistics(Long userId) {
+        LambdaQueryWrapper<BizViolation> baseWrapper = new LambdaQueryWrapper<>();
+        baseWrapper.eq(BizViolation::getDeleted, 0);
+
+        Long totalCount = violationMapper.selectCount(baseWrapper);
+
+        Long myCount = 0L;
+        if (userId != null) {
+            myCount = violationMapper.selectCount(
+                    new LambdaQueryWrapper<BizViolation>()
+                            .eq(BizViolation::getDeleted, 0)
+                            .eq(BizViolation::getUserId, userId)
+            );
+        }
+
+        Long pendingCount = violationMapper.selectCount(
+                new LambdaQueryWrapper<BizViolation>()
+                        .eq(BizViolation::getDeleted, 0)
+                        .eq(BizViolation::getStatus, "pending")
+        );
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("totalCount", totalCount);
+        result.put("myCount", myCount);
+        result.put("pendingCount", pendingCount);
+        return result;
     }
 
     private ViolationVO toVO(BizViolation entity) {

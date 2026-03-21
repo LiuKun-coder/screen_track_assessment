@@ -230,6 +230,8 @@ async function fetchScreenStats() {
     if (data.violationPoints) {
       violationPoints.value = data.violationPoints;
     }
+
+    updateChartsData();
     
   } catch (error) {
     console.error('获取大屏统计数据失败:', error);
@@ -238,6 +240,7 @@ async function fetchScreenStats() {
     totalViolations.value = 3452;
     processingRate.value = 98.5;
     onlineDevices.value = 42;
+    updateChartsData();
   }
 }
 
@@ -459,6 +462,83 @@ const initCharts = () => {
   }
 };
 
+const updateChartsData = () => {
+  if (pieChart) {
+    const pieData = (typeDistribution.value || []).map((item, index) => {
+      const colorList = ['#ef4444', '#f59e0b', '#3b82f6', '#8b5cf6', '#10b981'];
+      return {
+        name: item.name || item.type || `类型${index + 1}`,
+        value: item.value ?? item.count ?? 0,
+        itemStyle: { color: colorList[index % colorList.length] }
+      };
+    });
+
+    pieChart.setOption({
+      series: [
+        {
+          data: pieData.length ? pieData : [
+            { value: 0, name: '暂无数据', itemStyle: { color: '#64748b' } }
+          ]
+        }
+      ]
+    });
+  }
+
+  if (lineChart) {
+    const trendData = dailyTrend.value || [];
+    const xAxisData = trendData.map(item => item.date || item.day || item.name || '');
+    const totalSeries = trendData.map(item => item.count ?? item.total ?? 0);
+    const handledSeries = trendData.map(item => item.processed ?? item.handled ?? 0);
+
+    lineChart.setOption({
+      xAxis: {
+        data: xAxisData.length ? xAxisData : ['暂无数据']
+      },
+      series: [
+        {
+          name: '违规总数',
+          data: totalSeries.length ? totalSeries : [0]
+        },
+        {
+          name: '已处理',
+          data: handledSeries.length ? handledSeries : [0]
+        }
+      ]
+    });
+  }
+
+  if (barChart) {
+    const rankingData = areaRanking.value || [];
+    const yAxisData = rankingData.map(item => item.area || item.name || '未知区域');
+    const seriesData = rankingData.map(item => item.count ?? item.value ?? 0);
+
+    barChart.setOption({
+      yAxis: {
+        data: yAxisData.length ? yAxisData : ['暂无数据']
+      },
+      series: [
+        {
+          data: seriesData.length ? seriesData : [0]
+        }
+      ]
+    });
+  }
+
+  if (mapChart) {
+    mapChart.setOption({
+      series: [
+        {
+          data: (violationPoints.value || []).map(p => ({
+            name: p.location || p.name || '未知点位',
+            value: [p.lng ?? p.longitude ?? 0, p.lat ?? p.latitude ?? 0],
+            itemStyle: { color: getTypeColor(p.type || p.level || 'default') }
+          }))
+        }
+      ]
+    });
+  }
+};
+
 // --- 屏幕适配逻辑 ---
 const handleResize = () => {
   if (screenWrapper.value) {
@@ -494,6 +574,7 @@ const handleResize = () => {
 
 // --- 时间更新 ---
 let timer = null;
+let refreshTimer = null;
 const updateTime = () => {
   const now = new Date();
   const dateStr = now.toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' });
@@ -510,22 +591,22 @@ const goBackHome = () => {
 onMounted(async () => {
   updateTime();
   timer = setInterval(updateTime, 1000);
-  
-  // 获取后端数据
-  await fetchScreenStats();
-  
+
   nextTick(() => {
     initCharts();
+    fetchScreenStats();
+    updateChartsData();
     handleResize();
     window.addEventListener('resize', handleResize);
   });
   
   // 每30秒刷新一次大屏数据
-  setInterval(fetchScreenStats, 30000);
+  refreshTimer = setInterval(fetchScreenStats, 30000);
 });
 
 onUnmounted(() => {
   clearInterval(timer);
+  clearInterval(refreshTimer);
   window.removeEventListener('resize', handleResize);
   pieChart?.dispose();
   lineChart?.dispose();

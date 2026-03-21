@@ -4,47 +4,53 @@
       <h1 class="login-title">重置密码</h1>
       <p class="login-subtitle">请验证手机号后重置密码</p>
       
-      <el-form class="login-form" :model="resetForm" ref="resetFormRef">
-        <el-input
-          v-model="resetForm.phone"
-          placeholder="请输入手机号"
-        >
-          <template #prefix>
-            <el-icon><Iphone /></el-icon>
-          </template>
-        </el-input>
+      <el-form class="login-form" :model="resetForm" :rules="rules" ref="resetFormRef">
+        <el-form-item prop="phone">
+          <el-input
+            v-model="resetForm.phone"
+            placeholder="请输入手机号"
+          >
+            <template #prefix>
+              <el-icon><Iphone /></el-icon>
+            </template>
+          </el-input>
+        </el-form-item>
         
         <div class="verify-code-container">
           <el-input
             v-model="resetForm.verifyCode"
             placeholder="请输入验证码"
           ></el-input>
-          <el-button class="verify-code-btn">获取验证码</el-button>
+          <el-button class="verify-code-btn" :disabled="codeCooldown > 0" @click="handleSendCode">{{ codeCooldown > 0 ? codeCooldown + 's 后重试' : '获取验证码' }}</el-button>
         </div>
-        
-        <el-input
-          v-model="resetForm.newPassword"
-          type="password"
-          placeholder="请输入新密码"
-          show-password
-        >
-          <template #prefix>
-            <el-icon><Lock /></el-icon>
-          </template>
-        </el-input>
-        
-        <el-input
-          v-model="resetForm.confirmPassword"
-          type="password"
-          placeholder="请确认新密码"
-          show-password
-        >
-          <template #prefix>
-            <el-icon><Lock /></el-icon>
-          </template>
-        </el-input>
-        
-        <el-button type="primary" class="login-btn" @click="handleReset">重置密码</el-button>
+
+        <el-form-item prop="newPassword">
+          <el-input
+            v-model="resetForm.newPassword"
+            type="password"
+            placeholder="请输入新密码"
+            show-password
+          >
+            <template #prefix>
+              <el-icon><Lock /></el-icon>
+            </template>
+          </el-input>
+        </el-form-item>
+
+        <el-form-item prop="confirmPassword">
+          <el-input
+            v-model="resetForm.confirmPassword"
+            type="password"
+            placeholder="请确认新密码"
+            show-password
+          >
+            <template #prefix>
+              <el-icon><Lock /></el-icon>
+            </template>
+          </el-input>
+        </el-form-item>
+
+        <el-button type="primary" class="login-btn" :loading="submitting" @click="handleReset">重置密码</el-button>
       </el-form>
       
       <div class="register-link">
@@ -56,8 +62,10 @@
 
 <script>
 import { ref, reactive } from 'vue'
+import { useRouter } from 'vue-router'
 import { Lock, Iphone } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import { resetPassword, sendCode } from '@/api/auth'
 
 export default {
   name: 'ResetPasswordView',
@@ -66,7 +74,9 @@ export default {
     Iphone
   },
   setup() {
+    const router = useRouter()
     const resetFormRef = ref(null)
+    const submitting = ref(false)
     
     const resetForm = reactive({
       phone: '',
@@ -74,19 +84,86 @@ export default {
       newPassword: '',
       confirmPassword: ''
     })
-    
-    const handleReset = () => {
-      if (resetForm.newPassword !== resetForm.confirmPassword) {
-        ElMessage.error('两次输入密码不一致')
+
+    const codeCooldown = ref(0)
+    let cooldownTimer = null
+
+    const validatePhone = (rule, value, callback) => {
+      if (!value) {
+        callback(new Error('请输入手机号'))
         return
       }
-      console.log('重置密码表单提交', resetForm)
+      if (!/^1[3-9]\d{9}$/.test(value)) {
+        callback(new Error('手机号格式不正确'))
+        return
+      }
+      callback()
+    }
+
+    const validateConfirmPassword = (rule, value, callback) => {
+      if (!value) {
+        callback(new Error('请确认新密码'))
+        return
+      }
+      if (value !== resetForm.newPassword) {
+        callback(new Error('两次输入密码不一致'))
+        return
+      }
+      callback()
+    }
+
+    const rules = {
+      phone: [{ validator: validatePhone, trigger: 'blur' }],
+      newPassword: [
+        { required: true, message: '请输入新密码', trigger: 'blur' },
+        { min: 6, message: '新密码至少 6 位', trigger: 'blur' }
+      ],
+      confirmPassword: [{ validator: validateConfirmPassword, trigger: 'blur' }]
+    }
+    
+    const handleReset = async () => {
+      try {
+        await resetFormRef.value?.validate()
+        submitting.value = true
+        await resetPassword({
+          phone: resetForm.phone,
+          verifyCode: resetForm.verifyCode,
+          newPassword: resetForm.newPassword
+        })
+        ElMessage.success('密码重置成功，请重新登录')
+        router.push('/')
+      } finally {
+        submitting.value = false
+      }
+    }
+
+    const handleSendCode = async () => {
+      if (codeCooldown.value > 0) return
+      if (!/^1[3-9]\d{9}$/.test(resetForm.phone)) {
+        ElMessage.warning('请先输入正确的手机号')
+        return
+      }
+      try {
+        await sendCode({ phone: resetForm.phone, type: 'reset' })
+        ElMessage.success('验证码已发送')
+        codeCooldown.value = 60
+        cooldownTimer = setInterval(() => {
+          codeCooldown.value--
+          if (codeCooldown.value <= 0) clearInterval(cooldownTimer)
+        }, 1000)
+      } catch (error) {
+        ElMessage.error(error?.message || '验证码发送失败')
+      }
     }
     
     return {
       resetForm,
+      rules,
+      submitting,
       resetFormRef,
-      handleReset
+      codeCooldown,
+      handleReset,
+      handleSendCode
     }
   }
 }

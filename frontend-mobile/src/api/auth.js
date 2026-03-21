@@ -65,6 +65,14 @@ const authApi = {
      */
     resetPassword(data) {
         return request.post(API_ENDPOINTS.AUTH.RESET_PASSWORD, data)
+    },
+
+    /**
+     * 更新个人资料
+     * @param {object} data { name, phone, avatar, email, department }
+     */
+    updateProfile(data) {
+        return request.put('/users/profile', data)
     }
 }
 

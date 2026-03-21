@@ -1,6 +1,7 @@
 package org.example.sc_backend.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import org.example.sc_backend.dto.TrackUploadDTO;
 import org.example.sc_backend.entity.BizTrack;
 
 import java.time.LocalDate;
@@ -24,4 +25,9 @@ public interface TrackService {
      * 获取轨迹详情
      */
     BizTrack getTrackDetail(Long id);
+
+    /**
+     * 上传轨迹点
+     */
+    BizTrack uploadTrackPoints(Long currentUserId, TrackUploadDTO uploadDTO);
 }

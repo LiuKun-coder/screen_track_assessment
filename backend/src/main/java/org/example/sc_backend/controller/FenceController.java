@@ -1,5 +1,7 @@
 package org.example.sc_backend.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
+import org.example.sc_backend.common.utils.AdminAuthUtils;
 import org.example.sc_backend.common.utils.Result;
 import org.example.sc_backend.entity.BizFence;
 import org.example.sc_backend.service.FenceService;
@@ -40,7 +42,8 @@ public class FenceController {
      * 添加围栏 (管理员)
      */
     @PostMapping
-    public Result<Void> addFence(@RequestBody BizFence fence) {
+    public Result<Void> addFence(HttpServletRequest request, @RequestBody BizFence fence) {
+        AdminAuthUtils.requireAdmin(request);
         fenceService.addFence(fence);
         return Result.success();
     }
@@ -49,7 +52,8 @@ public class FenceController {
      * 更新围栏 (管理员)
      */
     @PutMapping("/{id}")
-    public Result<Void> updateFence(@PathVariable Long id, @RequestBody BizFence fence) {
+    public Result<Void> updateFence(HttpServletRequest request, @PathVariable Long id, @RequestBody BizFence fence) {
+        AdminAuthUtils.requireAdmin(request);
         fence.setId(id);
         fenceService.updateFence(fence);
         return Result.success();
@@ -59,7 +63,8 @@ public class FenceController {
      * 删除围栏 (管理员)
      */
     @DeleteMapping("/{id}")
-    public Result<Void> deleteFence(@PathVariable Long id) {
+    public Result<Void> deleteFence(HttpServletRequest request, @PathVariable Long id) {
+        AdminAuthUtils.requireAdmin(request);
         fenceService.deleteFence(id);
         return Result.success();
     }
