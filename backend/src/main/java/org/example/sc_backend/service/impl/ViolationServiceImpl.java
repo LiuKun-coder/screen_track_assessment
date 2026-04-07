@@ -15,10 +15,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 违规管理服务实现类
@@ -38,7 +42,10 @@ public class ViolationServiceImpl implements ViolationService {
 
         // 动态条件
         if (StringUtils.hasText(queryDTO.getType())) {
-            wrapper.eq(BizViolation::getType, queryDTO.getType());
+            List<String> typeCandidates = resolveTypeCandidates(queryDTO.getType());
+            if (!typeCandidates.isEmpty()) {
+                wrapper.in(BizViolation::getType, typeCandidates);
+            }
         }
         if (StringUtils.hasText(queryDTO.getStatus())) {
             wrapper.eq(BizViolation::getStatus, queryDTO.getStatus());
@@ -77,7 +84,10 @@ public class ViolationServiceImpl implements ViolationService {
                 .eq(BizViolation::getDeleted, 0);
 
         if (StringUtils.hasText(type)) {
-            wrapper.eq(BizViolation::getType, type);
+            List<String> typeCandidates = resolveTypeCandidates(type);
+            if (!typeCandidates.isEmpty()) {
+                wrapper.in(BizViolation::getType, typeCandidates);
+            }
         }
         if (StringUtils.hasText(status)) {
             wrapper.eq(BizViolation::getStatus, status);
@@ -155,5 +165,32 @@ public class ViolationServiceImpl implements ViolationService {
             vo.setEvidenceImages(JSON.parseArray(entity.getEvidenceImages(), String.class));
         }
         return vo;
+    }
+
+    private List<String> resolveTypeCandidates(String typeInput) {
+        if (!StringUtils.hasText(typeInput)) {
+            return List.of();
+        }
+
+        String normalized = typeInput.trim();
+        Set<String> candidates = new LinkedHashSet<>();
+        candidates.add(normalized);
+
+        Map<String, List<String>> aliasMap = new HashMap<>();
+        aliasMap.put("speeding", Arrays.asList("speeding", "Speeding", "超速"));
+        aliasMap.put("illegal_parking", Arrays.asList("illegal_parking", "Illegal Parking", "parking", "违停"));
+        aliasMap.put("wrong_way", Arrays.asList("wrong_way", "Wrong Way", "逆行"));
+        aliasMap.put("red_light", Arrays.asList("red_light", "Red Light", "闯红灯"));
+        aliasMap.put("超速", Arrays.asList("speeding", "Speeding", "超速"));
+        aliasMap.put("违停", Arrays.asList("illegal_parking", "Illegal Parking", "parking", "违停"));
+        aliasMap.put("逆行", Arrays.asList("wrong_way", "Wrong Way", "逆行"));
+        aliasMap.put("闯红灯", Arrays.asList("red_light", "Red Light", "闯红灯"));
+
+        List<String> aliases = aliasMap.get(normalized);
+        if (aliases != null) {
+            candidates.addAll(aliases);
+        }
+
+        return new ArrayList<>(candidates);
     }
 }

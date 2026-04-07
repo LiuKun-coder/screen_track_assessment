@@ -50,7 +50,7 @@ CREATE TABLE `biz_appeal` (
 
 LOCK TABLES `biz_appeal` WRITE;
 /*!40000 ALTER TABLE `biz_appeal` DISABLE KEYS */;
-INSERT INTO `biz_appeal` VALUES (1,2,2,'AP2026020001','web','Factual Error','My e-bike was parked in the designated area. The camera angle may have caused misjudgment.','13800138001','[\"https://example.com/appeal/evidence001.jpg\"]','pending',NULL,NULL,NULL,'2026-02-06 20:23:05'),(2,1,1,'AP2026020002','miniapp','Emergency','Had an emergency and needed to rush to the infirmary. Please consider the circumstances.','13900139002','[\"https://example.com/appeal/evidence002.jpg\"]','approved','Verified emergency situation. Penalty revoked. Please drive safely in the future.',1,'2026-02-06 20:23:05','2026-02-05 20:23:05'),(3,3,3,'AP2026020003','web','Insufficient Evidence','The surveillance footage is unclear. Cannot accurately identify if it was me or my vehicle.','13700137003','[]','rejected','Multi-angle surveillance confirmed identity. Appeal rejected.',1,'2026-02-07 14:23:05','2026-02-07 08:23:05');
+-- 示例数据已移除，请执行 backend/init_test_data.sql 初始化中文样例数据。
 /*!40000 ALTER TABLE `biz_appeal` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -78,7 +78,7 @@ CREATE TABLE `biz_fence` (
 
 LOCK TABLES `biz_fence` WRITE;
 /*!40000 ALTER TABLE `biz_fence` DISABLE KEYS */;
-INSERT INTO `biz_fence` VALUES (1,'Main Campus No-Go Zone','Library to Teaching Building A','[{\"lat\":30.5728,\"lng\":104.0668},{\"lat\":30.5735,\"lng\":104.0668},{\"lat\":30.5735,\"lng\":104.0678},{\"lat\":30.5728,\"lng\":104.0678}]','active','2026-02-07 20:23:05'),(2,'Student Dormitory Area','East Area Dorms 1-5','[{\"lat\":30.5750,\"lng\":104.0700},{\"lat\":30.5760,\"lng\":104.0700},{\"lat\":30.5760,\"lng\":104.0720},{\"lat\":30.5750,\"lng\":104.0720}]','active','2026-02-07 20:23:05'),(3,'Sports Field Area','Track and Basketball Courts','[{\"lat\":30.5700,\"lng\":104.0650},{\"lat\":30.5715,\"lng\":104.0650},{\"lat\":30.5715,\"lng\":104.0670},{\"lat\":30.5700,\"lng\":104.0670}]','active','2026-02-07 20:23:05'),(4,'Cafeteria Zone','Cafeteria 1 to Cafeteria 2','[{\"lat\":30.5740,\"lng\":104.0680},{\"lat\":30.5748,\"lng\":104.0680},{\"lat\":30.5748,\"lng\":104.0695},{\"lat\":30.5740,\"lng\":104.0695}]','inactive','2026-02-07 20:23:05'),(5,'主校区安全围栏',NULL,NULL,'active','2026-02-07 20:25:19');
+-- 示例数据已移除，请执行 backend/init_test_data.sql 初始化中文样例数据。
 /*!40000 ALTER TABLE `biz_fence` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -108,7 +108,7 @@ CREATE TABLE `biz_track` (
 
 LOCK TABLES `biz_track` WRITE;
 /*!40000 ALTER TABLE `biz_track` DISABLE KEYS */;
-INSERT INTO `biz_track` VALUES (1,1,'2026-02-07','2026-02-07 17:23:05','2026-02-07 18:23:05',3.50,'[{\"time\":\"2026-02-07T17:20:00\",\"lat\":30.5728,\"lng\":104.0668,\"speed\":15},{\"time\":\"2026-02-07T17:25:00\",\"lat\":30.5735,\"lng\":104.0675,\"speed\":18},{\"time\":\"2026-02-07T17:30:00\",\"lat\":30.5740,\"lng\":104.0680,\"speed\":12}]','2026-02-07 20:23:05'),(2,2,'2026-02-07','2026-02-07 15:23:05','2026-02-07 16:23:05',5.20,'[{\"time\":\"2026-02-07T15:20:00\",\"lat\":30.5700,\"lng\":104.0650,\"speed\":22},{\"time\":\"2026-02-07T15:30:00\",\"lat\":30.5720,\"lng\":104.0665,\"speed\":25},{\"time\":\"2026-02-07T15:40:00\",\"lat\":30.5735,\"lng\":104.0680,\"speed\":18}]','2026-02-07 20:23:05'),(3,1,'2026-02-06','2026-02-06 17:23:05','2026-02-06 18:23:05',2.80,'[{\"time\":\"2026-02-06T17:20:00\",\"lat\":30.5745,\"lng\":104.0685,\"speed\":10},{\"time\":\"2026-02-06T17:30:00\",\"lat\":30.5752,\"lng\":104.0692,\"speed\":15},{\"time\":\"2026-02-06T17:40:00\",\"lat\":30.5758,\"lng\":104.0700,\"speed\":18}]','2026-02-06 20:23:05'),(4,3,'2026-02-07','2026-02-07 19:23:05','2026-02-07 19:53:05',1.50,'[{\"time\":\"2026-02-07T19:20:00\",\"lat\":30.5730,\"lng\":104.0660,\"speed\":12},{\"time\":\"2026-02-07T19:30:00\",\"lat\":30.5738,\"lng\":104.0668,\"speed\":16},{\"time\":\"2026-02-07T19:40:00\",\"lat\":30.5745,\"lng\":104.0675,\"speed\":14}]','2026-02-07 20:23:05');
+-- 示例数据已移除，请执行 backend/init_test_data.sql 初始化中文样例数据。
 /*!40000 ALTER TABLE `biz_track` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -144,7 +144,7 @@ CREATE TABLE `biz_violation` (
 
 LOCK TABLES `biz_violation` WRITE;
 /*!40000 ALTER TABLE `biz_violation` DISABLE KEYS */;
-INSERT INTO `biz_violation` VALUES (1,1,'Zhang San','2026-02-05 20:23:05','Library Plaza','Speeding','E-bike speed exceeded 25km/h, measured at 32km/h','Warning','processed','[\"https://example.com/evidence/img001.jpg\"]',1,'none','2026-02-05 20:23:05',0),(2,2,'Li Si','2026-02-06 20:23:05','Teaching Building A Entrance','Illegal Parking','Parked in no-parking zone, blocking traffic','Warning','processed','[\"https://example.com/evidence/img002.jpg\"]',1,'pending','2026-02-06 20:23:05',0),(3,3,'Wang Wu','2026-02-07 08:23:05','Main Road','Wrong Way','Riding against traffic on main campus road','Verbal Warning','pending','[\"https://example.com/evidence/img004.jpg\"]',1,'none','2026-02-07 08:23:05',0),(4,1,'Zhang San','2026-02-07 14:23:05','Campus Gate','Red Light','Ignored traffic signal and ran red light','Demerit','pending','[\"https://example.com/evidence/img005.jpg\"]',1,'none','2026-02-07 14:23:05',0),(5,2,'Li Si','2026-02-07 17:23:05','Dormitory Area','Speeding','Speed exceeded limit in dorm area, measured 28km/h','Warning','pending','[\"https://example.com/evidence/img007.jpg\"]',0,'none','2026-02-07 17:23:05',0);
+-- 示例数据已移除，请执行 backend/init_test_data.sql 初始化中文样例数据。
 /*!40000 ALTER TABLE `biz_violation` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -176,7 +176,7 @@ CREATE TABLE `sys_admin` (
 
 LOCK TABLES `sys_admin` WRITE;
 /*!40000 ALTER TABLE `sys_admin` DISABLE KEYS */;
-INSERT INTO `sys_admin` VALUES (1,'kunliu','123456','???',NULL,'admin','??????','2026-02-07 19:54:36',0);
+-- 示例数据已移除，请执行 backend/init_test_data.sql 初始化中文样例数据。
 /*!40000 ALTER TABLE `sys_admin` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -212,7 +212,7 @@ CREATE TABLE `sys_user` (
 
 LOCK TABLES `sys_user` WRITE;
 /*!40000 ALTER TABLE `sys_user` DISABLE KEYS */;
-INSERT INTO `sys_user` VALUES (1,'liukun','123456','liukun',NULL,NULL,NULL,NULL,'student','active','2026-01-31 20:39:20','2026-01-31 20:39:20',0);
+-- 示例数据已移除，请执行 backend/init_test_data.sql 初始化中文样例数据。
 /*!40000 ALTER TABLE `sys_user` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

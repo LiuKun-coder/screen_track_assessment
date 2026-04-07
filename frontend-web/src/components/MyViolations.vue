@@ -25,7 +25,15 @@
         <div style="position:relative;">
           <button class="mine-filter-btn" @click="toggleMineTypeFilter">按类型筛选</button>
           <div v-if="showMineTypeFilter" class="mine-dropdown">
-            <div v-for="type in mineTypeOptions" :key="type" class="mine-dropdown-item" :class="{ active: mineFilterType === type }" @click="setMineType(type); showMineTypeFilter=false">{{ type }}</div>
+            <div
+              v-for="type in mineTypeOptions"
+              :key="type.value"
+              class="mine-dropdown-item"
+              :class="{ active: mineFilterType === type.value }"
+              @click="setMineType(type); showMineTypeFilter=false"
+            >
+              {{ type.label }}
+            </div>
           </div>
         </div>
       </div>
@@ -43,7 +51,7 @@
         </div>
         <div class="mine-row">
           <span class="mine-label">违规类型</span>
-          <span class="mine-value">{{ item.type }}</span>
+          <span class="mine-value">{{ item.typeName }}</span>
         </div>
         <button class="mine-detail-btn" @click="viewDetail(item)">查看具体违规地点</button>
       </div>
@@ -72,7 +80,7 @@
           </div>
           <div class="detail-row">
             <span class="detail-label">违规类型：</span>
-            <span class="detail-value">{{ currentDetail.type }}</span>
+            <span class="detail-value">{{ currentDetail.typeName }}</span>
           </div>
           <div class="detail-row">
             <span class="detail-label">具体位置：</span>
@@ -103,10 +111,16 @@ const total = ref(0)
 
 const minePageSize = 4
 const mineCurrentPage = ref(1)
-const mineFilterType = ref('全部')
+const mineFilterType = ref('')
 const mineFilterPlace = ref('全部')
 const mineFilterTime = ref('')
-const mineTypeOptions = ['全部', '超速', '违停', '逆行', '闯红灯']
+const mineTypeOptions = [
+  { label: '全部', value: '' },
+  { label: '超速', value: 'speeding' },
+  { label: '违停', value: 'illegal_parking' },
+  { label: '逆行', value: 'wrong_way' },
+  { label: '闯红灯', value: 'red_light' }
+]
 const minePlaceOptions = ['全部', '东门', '西门', '南门', '北门']
 
 const showMineTypeFilter = ref(false)
@@ -114,6 +128,22 @@ const showMinePlaceFilter = ref(false)
 const showMineTimeFilter = ref(false)
 const showDetailDialog = ref(false)
 const currentDetail = ref(null)
+
+const typeLabelMap = {
+  speeding: '超速',
+  illegal_parking: '违停',
+  wrong_way: '逆行',
+  red_light: '闯红灯',
+  parking: '违停',
+  'Speeding': '超速',
+  'Illegal Parking': '违停',
+  'Wrong Way': '逆行',
+  'Red Light': '闯红灯'
+}
+
+function getTypeLabel(type) {
+  return typeLabelMap[type] || type || '未知类型'
+}
 
 // 从后端获取数据
 async function fetchMyViolations() {
@@ -125,7 +155,7 @@ async function fetchMyViolations() {
     }
     
     // 添加筛选条件
-    if (mineFilterType.value !== '全部') {
+    if (mineFilterType.value) {
       params.type = mineFilterType.value
     }
     if (mineFilterTime.value.trim()) {
@@ -141,6 +171,7 @@ async function fetchMyViolations() {
       time: item.violationTime ? item.violationTime.replace('T', ' ').substring(0, 16) : '',
       place: item.place,
       type: item.type,
+      typeName: getTypeLabel(item.type),
       detail: item.detail,
       // 保留原始数据
       ...item
@@ -150,8 +181,8 @@ async function fetchMyViolations() {
     console.error('获取违规记录失败:', error)
     // 使用示例数据作为后备
     mineList.value = [
-      { id: 1, time: '2024-06-01 10:00', place: '东门', type: '超速', detail: '东门门口红绿灯处' },
-      { id: 2, time: '2024-06-02 11:30', place: '西门', type: '违停', detail: '西门停车场入口' },
+      { id: 1, time: '2024-06-01 10:00', place: '东门', type: 'speeding', typeName: '超速', detail: '东门门口红绿灯处' },
+      { id: 2, time: '2024-06-02 11:30', place: '西门', type: 'illegal_parking', typeName: '违停', detail: '西门停车场入口' },
     ]
     total.value = mineList.value.length
   } finally {
@@ -185,8 +216,8 @@ function mineNextPage() {
   }
 }
 
-function setMineType(type) {
-  mineFilterType.value = type
+function setMineType(typeOption) {
+  mineFilterType.value = typeOption.value
   mineCurrentPage.value = 1
   fetchMyViolations()
 }

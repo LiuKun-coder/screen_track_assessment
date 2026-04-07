@@ -409,7 +409,7 @@ function drawTrackOnMap() {
 async function initMap() {
   const key = resolveMapKey()
   if (!key) {
-    mapData.value = '未配置高德地图 Key。请设置 VUE_APP_AMAP_KEY 或 localStorage.AMAP_WEB_KEY'
+    mapData.value = '地图暂不可用'
     return
   }
   try {
@@ -433,7 +433,7 @@ async function initMap() {
     }
   } catch (error) {
     console.error('地图初始化失败:', error)
-    mapData.value = '地图加载失败，请检查 Key、域名白名单或网络连接'
+    mapData.value = '地图加载失败，请检查网络后重试'
   }
 }
 
