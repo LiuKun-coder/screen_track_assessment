@@ -4,16 +4,18 @@ import com.aliyun.dysmsapi20170525.Client;
 import com.aliyun.dysmsapi20170525.models.SendSmsRequest;
 import com.aliyun.dysmsapi20170525.models.SendSmsResponse;
 import com.aliyun.teaopenapi.models.Config;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import org.example.sc_backend.common.exception.BusinessException;
 import org.example.sc_backend.service.SmsCodeService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import jakarta.annotation.PostConstruct;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
-import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class SmsCodeServiceImpl implements SmsCodeService {
@@ -21,7 +23,7 @@ public class SmsCodeServiceImpl implements SmsCodeService {
     private static final Set<String> SUPPORTED_TYPES = Set.of("register", "reset", "login");
     private static final SecureRandom RANDOM = new SecureRandom();
 
-    private final Map<String, SmsCodeEntry> codeCache = new ConcurrentHashMap<>();
+    private Cache<String, SmsCodeEntry> codeCache;
 
     @Value("${sms.aliyun.access-key:}")
     private String accessKey;
@@ -44,6 +46,14 @@ public class SmsCodeServiceImpl implements SmsCodeService {
     @Value("${sms.resend-interval-seconds:60}")
     private Integer resendIntervalSeconds;
 
+    @PostConstruct
+    public void init() {
+        codeCache = Caffeine.newBuilder()
+                .expireAfterWrite(codeExpireSeconds, TimeUnit.SECONDS)
+                .maximumSize(10000)
+                .build();
+    }
+
     @Override
     public void sendCode(String phone, String type) {
         String normalizedPhone = normalizePhone(phone);
@@ -51,7 +61,7 @@ public class SmsCodeServiceImpl implements SmsCodeService {
         validateSmsConfig();
 
         String cacheKey = buildCacheKey(normalizedPhone, normalizedType);
-        SmsCodeEntry existing = codeCache.get(cacheKey);
+        SmsCodeEntry existing = codeCache.getIfPresent(cacheKey);
         LocalDateTime now = LocalDateTime.now();
         if (existing != null && existing.nextSendTime.isAfter(now)) {
             long waitSeconds = java.time.Duration.between(now, existing.nextSendTime).getSeconds();
@@ -77,13 +87,13 @@ public class SmsCodeServiceImpl implements SmsCodeService {
         }
 
         String cacheKey = buildCacheKey(normalizedPhone, normalizedType);
-        SmsCodeEntry entry = codeCache.get(cacheKey);
+        SmsCodeEntry entry = codeCache.getIfPresent(cacheKey);
         if (entry == null) {
             throw new BusinessException(400, "验证码不存在或已失效");
         }
 
         if (entry.expireTime.isBefore(LocalDateTime.now())) {
-            codeCache.remove(cacheKey);
+            codeCache.invalidate(cacheKey);
             throw new BusinessException(400, "验证码已过期");
         }
 
@@ -91,7 +101,7 @@ public class SmsCodeServiceImpl implements SmsCodeService {
             throw new BusinessException(400, "验证码错误");
         }
 
-        codeCache.remove(cacheKey);
+        codeCache.invalidate(cacheKey);
     }
 
     private void sendSmsByAliyun(String phone, String code) {

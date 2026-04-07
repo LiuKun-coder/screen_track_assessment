@@ -92,9 +92,12 @@ public class AppealServiceImpl implements AppealService {
     @Override
     @Transactional
     public void handleAppeal(Long id, Long handlerId, String status, String replyContent) {
-        BizAppeal appeal = appealMapper.selectById(id);
+        BizAppeal appeal = appealMapper.selectByIdForUpdate(id);
         if (appeal == null) {
             throw new BusinessException(404, "申诉记录不存在");
+        }
+        if (!"pending".equals(appeal.getStatus())) {
+            throw new BusinessException(400, "该申诉已被处理");
         }
 
         appeal.setStatus(status);

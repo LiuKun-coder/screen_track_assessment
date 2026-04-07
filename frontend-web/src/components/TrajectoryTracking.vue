@@ -5,6 +5,7 @@
       <button v-if="userRole === 'admin'" class="track-btn" @click="openUserTrackDialog">查看用户的回溯轨迹</button>
       <button class="track-btn" @click="viewFence">查看电子围栏</button>
       <button v-if="userRole === 'admin'" class="track-btn" @click="editFence">更改电子围栏</button>
+      <button v-if="userRole === 'admin'" class="track-btn" @click="handleDeleteFence">删除电子围栏</button>
     </div>
     <div class="track-right">
       <!-- 违规信息显示面板 -->
@@ -223,7 +224,7 @@
 import { nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import AMapLoader from '@amap/amap-jsapi-loader'
 import { getTrackByDate } from '@/api/track'
-import { getFenceList, addFence, updateFence } from '@/api/fence'
+import { getFenceList, addFence, updateFence, deleteFence } from '@/api/fence'
 import { searchUsers } from '@/api/user'
 import { ElMessage } from 'element-plus'
 
@@ -408,7 +409,7 @@ function drawTrackOnMap() {
 async function initMap() {
   const key = resolveMapKey()
   if (!key) {
-    mapData.value = '未配置高德地图 Key。请设置 VUE_APP_AMAP_KEY 或 localStorage.AMAP_WEB_KEY'
+    mapData.value = '地图暂不可用'
     return
   }
   try {
@@ -432,7 +433,7 @@ async function initMap() {
     }
   } catch (error) {
     console.error('地图初始化失败:', error)
-    mapData.value = '地图加载失败，请检查 Key、域名白名单或网络连接'
+    mapData.value = '地图加载失败，请检查网络后重试'
   }
 }
 
@@ -448,6 +449,13 @@ async function fetchFenceList() {
       fenceRange.value = fence.rangeDesc || '东门-西门-南门-北门'
       fenceStatus.value = fence.status === 'active' ? '启用' : '禁用'
       drawFenceOnMap()
+    } else {
+      currentFence.value = null
+      fenceId.value = null
+      fenceName.value = '主校区安全围栏'
+      fenceRange.value = '东门-西门-南门-北门'
+      fenceStatus.value = '启用'
+      clearFenceOverlay()
     }
   } catch (error) {
     console.error('获取电子围栏失败:', error)
@@ -557,6 +565,25 @@ async function saveFence() {
     fetchFenceList()
   } catch (error) {
     console.error('保存围栏失败:', error)
+  }
+}
+
+// 删除电子围栏
+async function handleDeleteFence() {
+  if (!currentFence.value?.id) {
+    ElMessage.warning('当前没有电子围栏可删除')
+    return
+  }
+  
+  try {
+    await deleteFence(currentFence.value.id)
+    ElMessage.success('删除成功')
+    currentFence.value = null
+    fenceId.value = null
+    clearFenceOverlay()
+    fetchFenceList()
+  } catch (error) {
+    console.error('删除围栏失败:', error)
   }
 }
 

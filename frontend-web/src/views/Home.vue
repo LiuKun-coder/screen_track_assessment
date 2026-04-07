@@ -51,6 +51,14 @@ const violationInfoForTrack = ref(null)
 const userRole = ref('user') // 默认普通用户
 const userInfo = ref(null)
 
+function normalizeRole(role) {
+  const normalized = String(role || '').trim().toLowerCase()
+  if (normalized === 'admin' || normalized === 'super_admin') {
+    return 'admin'
+  }
+  return 'user'
+}
+
 // 完整菜单列表
 const allMenuList = [
   { key: 'admin', label: '管理人员', roles: ['admin'] },
@@ -84,7 +92,7 @@ function checkUserAuth() {
   try {
     const userData = JSON.parse(userInfoStr)
     userInfo.value = userData
-    userRole.value = userData.role || 'user'
+    userRole.value = normalizeRole(userData.role)
     
     // 如果当前菜单对用户角色不可见，切换到默认菜单
     const currentMenuItem = allMenuList.find(item => item.key === currentMenu.value)

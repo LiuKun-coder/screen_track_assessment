@@ -47,7 +47,7 @@ router.beforeEach((to, from, next) => {
   }
 
   // 需要管理员权限的页面
-  if (to.meta.requiresAdmin && userInfo.role !== 'admin') {
+  if (to.meta.requiresAdmin && userInfo.role !== 'admin' && userInfo.role !== 'super_admin') {
     next('/home')
     return
   }

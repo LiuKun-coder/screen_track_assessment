@@ -29,4 +29,16 @@ public class ScreenStatsVO {
 
     /** 申诉处理率 */
     private Double appealRate;
+
+    /** 在线设备数（基于近24小时轨迹活跃用户） */
+    private Integer onlineDevices;
+
+    /** 区域违规排行 [{area: "教学楼", count: 23}, ...] */
+    private List<Map<String, Object>> areaRanking;
+
+    /** 地图违规点位 [{location: "北门", lng: 117.1, lat: 34.2, type: "warning"}, ...] */
+    private List<Map<String, Object>> violationPoints;
+
+    /** 实时违规列表 [{time: "2026-04-06 10:22:00", typeName: "超速", ...}, ...] */
+    private List<Map<String, Object>> recentViolations;
 }

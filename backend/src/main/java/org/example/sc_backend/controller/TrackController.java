@@ -59,8 +59,12 @@ public class TrackController {
      * 获取轨迹详情
      */
     @GetMapping("/{id}")
-    public Result<BizTrack> getTrackDetail(@PathVariable Long id) {
+    public Result<BizTrack> getTrackDetail(HttpServletRequest request, @PathVariable Long id) {
+        Long currentUserId = (Long) request.getAttribute("userId");
         BizTrack track = trackService.getTrackDetail(id);
+        if (!java.util.Objects.equals(track.getUserId(), currentUserId)) {
+            AdminAuthUtils.requireAdmin(request);
+        }
         return Result.success(track);
     }
 

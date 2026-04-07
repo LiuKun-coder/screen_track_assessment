@@ -231,13 +231,13 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private boolean verifyPassword(String rawPassword, String storedPassword) {
-        if (storedPassword == null) {
+        if (storedPassword == null || rawPassword == null) {
             return false;
         }
         if (isBcryptHash(storedPassword)) {
             return passwordEncoder.matches(rawPassword, storedPassword);
         }
-        return rawPassword.equals(storedPassword);
+        return storedPassword.equals(rawPassword);
     }
 
     private void upgradeUserPasswordIfPlaintext(SysUser user, String rawPassword) {

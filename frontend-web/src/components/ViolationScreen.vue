@@ -9,7 +9,7 @@
             <span class="logo-icon">🛡️</span>
             <h1>校园电动车智能违规监控平台</h1>
           </div>
-          <div class="header-subtitle">Intelligent Violation Monitoring Platform</div>
+          <div class="header-subtitle">实时监测 · 智能研判 · 闭环治理</div>
         </div>
         <div class="header-info">
           <div class="info-item weather">
@@ -116,7 +116,7 @@
                     class="list-item"
                     :class="{ 'even': index % 2 === 0 }"
                   >
-                    <span class="time">{{ item.time.split(' ')[1] }}</span>
+                    <span class="time">{{ formatListTime(item.time) }}</span>
                     <span class="type" :class="getTypeClass(item.type)">{{ item.typeName }}</span>
                     <span class="location" :title="item.location">{{ item.location }}</span>
                     <span class="status" :class="item.status">{{ item.statusName }}</span>
@@ -142,7 +142,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue';
+import { ref, onMounted, onUnmounted, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import * as echarts from 'echarts';
 import mapJson from '@/assets/cumt_nanhu.json';
@@ -168,78 +168,91 @@ const totalViolations = ref(0);
 const processingRate = ref(0);
 const onlineDevices = ref(0);
 
-// 模拟地图点位 (坐标基于中国矿业大学南湖校区范围)
-const violationPoints = ref([
-  { id: 1, lng: 117.1480, lat: 34.2200, type: 'danger', location: '北门入口' },
-  { id: 2, lng: 117.1380, lat: 34.2180, type: 'warning', location: '博学楼A区' },
-  { id: 3, lng: 117.1420, lat: 34.2160, type: 'danger', location: '图书馆前' },
-  { id: 4, lng: 117.1360, lat: 34.2120, type: 'info', location: '梅苑餐厅' },
-  { id: 5, lng: 117.1450, lat: 34.2120, type: 'warning', location: '南湖体育场' },
-  { id: 6, lng: 117.1350, lat: 34.2100, type: 'danger', location: '松苑宿舍' },
-]);
-
-// 模拟实时列表
-const recentViolations = ref([
-  { id: 1, time: '2023-10-27 14:30:22', type: 'parking', typeName: '违停', location: '图书馆正门', status: 'pending', statusName: '待处理' },
-  { id: 2, time: '2023-10-27 14:28:15', type: 'speeding', typeName: '超速', location: '北区主干道', status: 'processing', statusName: '处理中' },
-  { id: 3, time: '2023-10-27 14:25:01', type: 'helmet', typeName: '未戴头盔', location: '东门出口', status: 'completed', statusName: '已处理' },
-  { id: 4, time: '2023-10-27 14:22:45', type: 'parking', typeName: '违停', location: '三食堂侧门', status: 'pending', statusName: '待处理' },
-  { id: 5, time: '2023-10-27 14:18:30', type: 'speeding', typeName: '超速', location: '实验楼B座', status: 'completed', statusName: '已处理' },
-  { id: 6, time: '2023-10-27 14:15:10', type: 'helmet', typeName: '未戴头盔', location: '南门入口', status: 'processing', statusName: '处理中' },
-  { id: 7, time: '2023-10-27 14:12:05', type: 'parking', typeName: '违停', location: '行政楼后', status: 'completed', statusName: '已处理' },
-  { id: 8, time: '2023-10-27 14:09:55', type: 'speeding', typeName: '超速', location: '体育馆西侧', status: 'pending', statusName: '待处理' },
-]);
+const violationPoints = ref([]);
+const recentViolations = ref([]);
 
 // 图表数据 - 从后端获取
 const typeDistribution = ref([]);
 const dailyTrend = ref([]);
 const areaRanking = ref([]);
 
+const createFallbackPoints = () => ([
+  { id: 1, lng: 117.1480, lat: 34.2200, type: 'danger', location: '北门' },
+  { id: 2, lng: 117.1380, lat: 34.2180, type: 'warning', location: '教学楼A区' },
+  { id: 3, lng: 117.1420, lat: 34.2160, type: 'danger', location: '图书馆广场' },
+  { id: 4, lng: 117.1360, lat: 34.2120, type: 'info', location: '食堂' },
+  { id: 5, lng: 117.1450, lat: 34.2120, type: 'warning', location: '体育馆' },
+  { id: 6, lng: 117.1350, lat: 34.2100, type: 'danger', location: '宿舍区' }
+]);
+
+const createFallbackRecentViolations = () => {
+  const now = new Date();
+  const formatTime = (offsetMinutes) => {
+    const date = new Date(now.getTime() - offsetMinutes * 60000);
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}:${String(date.getSeconds()).padStart(2, '0')}`;
+  };
+  return [
+    { id: 1, time: formatTime(5), type: 'speeding', typeName: '超速', location: '北门', status: 'pending', statusName: '待处理' },
+    { id: 2, time: formatTime(12), type: 'illegal_parking', typeName: '违停', location: '教学楼A区', status: 'processing', statusName: '处理中' },
+    { id: 3, time: formatTime(18), type: 'wrong_way', typeName: '逆行', location: '图书馆广场', status: 'processed', statusName: '已处理' },
+    { id: 4, time: formatTime(26), type: 'red_light', typeName: '闯红灯', location: '宿舍区', status: 'pending', statusName: '待处理' },
+    { id: 5, time: formatTime(35), type: 'speeding', typeName: '超速', location: '主干道', status: 'processed', statusName: '已处理' },
+    { id: 6, time: formatTime(42), type: 'illegal_parking', typeName: '违停', location: '体育馆', status: 'processing', statusName: '处理中' }
+  ];
+};
+
 // 从后端获取大屏统计数据
 async function fetchScreenStats() {
   try {
     const data = await getScreenStats();
-    
-    // 更新核心指标
-    if (data.todayViolations !== undefined) {
-      todayViolations.value = data.todayViolations;
-    }
-    if (data.totalViolations !== undefined) {
-      totalViolations.value = data.totalViolations;
-    }
-    if (data.processingRate !== undefined) {
-      processingRate.value = data.processingRate;
-    }
-    if (data.onlineDevices !== undefined) {
-      onlineDevices.value = data.onlineDevices;
-    }
-    
-    // 更新图表数据
-    if (data.typeDistribution) {
-      typeDistribution.value = data.typeDistribution;
-    }
-    if (data.dailyTrend) {
-      dailyTrend.value = data.dailyTrend;
-    }
-    if (data.areaRanking) {
-      areaRanking.value = data.areaRanking;
-    }
-    if (data.recentViolations) {
-      recentViolations.value = data.recentViolations;
-    }
-    if (data.violationPoints) {
-      violationPoints.value = data.violationPoints;
-    }
+
+    todayViolations.value = Number(data.todayViolations || 0);
+    totalViolations.value = Number(data.totalViolations || 0);
+    processingRate.value = Number(data.processingRate || 0);
+    onlineDevices.value = Number(data.onlineDevices || 0);
+
+    typeDistribution.value = Array.isArray(data.typeDistribution) ? data.typeDistribution : [];
+    dailyTrend.value = Array.isArray(data.dailyTrend) ? data.dailyTrend : [];
+    areaRanking.value = Array.isArray(data.areaRanking) ? data.areaRanking : [];
+    recentViolations.value = Array.isArray(data.recentViolations) && data.recentViolations.length
+      ? data.recentViolations
+      : createFallbackRecentViolations();
+    violationPoints.value = Array.isArray(data.violationPoints) && data.violationPoints.length
+      ? data.violationPoints
+      : createFallbackPoints();
 
     updateChartsData();
-    
   } catch (error) {
     console.error('获取大屏统计数据失败:', error);
-    // 使用默认模拟数据
-    todayViolations.value = 127;
-    totalViolations.value = 3452;
-    processingRate.value = 98.5;
-    onlineDevices.value = 42;
+
+    todayViolations.value = 36;
+    totalViolations.value = 912;
+    processingRate.value = 94.6;
+    onlineDevices.value = 58;
+    typeDistribution.value = [
+      { type: 'illegal_parking', name: '违停', value: 332 },
+      { type: 'speeding', name: '超速', value: 276 },
+      { type: 'wrong_way', name: '逆行', value: 168 },
+      { type: 'red_light', name: '闯红灯', value: 136 }
+    ];
+    dailyTrend.value = [
+      { date: '周一', count: 102, processed: 97 },
+      { date: '周二', count: 120, processed: 110 },
+      { date: '周三', count: 114, processed: 103 },
+      { date: '周四', count: 136, processed: 126 },
+      { date: '周五', count: 152, processed: 146 },
+      { date: '周六', count: 168, processed: 160 },
+      { date: '周日', count: 120, processed: 112 }
+    ];
+    areaRanking.value = [
+      { area: '教学楼A区', count: 146 },
+      { area: '宿舍区', count: 132 },
+      { area: '图书馆广场', count: 118 },
+      { area: '主干道', count: 105 },
+      { area: '体育馆', count: 96 }
+    ];
+    recentViolations.value = createFallbackRecentViolations();
+    violationPoints.value = createFallbackPoints();
     updateChartsData();
   }
 }
@@ -247,9 +260,16 @@ async function fetchScreenStats() {
 // --- 工具函数 ---
 const getTypeColor = (type) => {
   const map = {
-    parking: '#ef4444', // danger
-    speeding: '#f59e0b', // warning
-    helmet: '#3b82f6', // info
+    illegal_parking: '#ef4444',
+    parking: '#ef4444',
+    speeding: '#f59e0b',
+    wrong_way: '#8b5cf6',
+    red_light: '#3b82f6',
+    helmet: '#3b82f6',
+    '违停': '#ef4444',
+    '超速': '#f59e0b',
+    '逆行': '#8b5cf6',
+    '闯红灯': '#3b82f6',
     danger: '#ef4444',
     warning: '#f59e0b',
     info: '#3b82f6',
@@ -260,18 +280,93 @@ const getTypeColor = (type) => {
 
 const getTypeClass = (type) => {
   const map = {
+    illegal_parking: 'text-danger',
     parking: 'text-danger',
     speeding: 'text-warning',
+    red_light: 'text-info',
+    wrong_way: 'text-info',
     helmet: 'text-info',
     default: 'text-normal'
   };
   return map[type] || map.default;
 };
 
+const formatListTime = (timeText) => {
+  if (!timeText) return '--';
+  const raw = String(timeText);
+  if (raw.includes(' ')) {
+    return raw.split(' ')[1] || raw;
+  }
+  if (raw.includes('T')) {
+    return raw.split('T')[1]?.slice(0, 8) || raw;
+  }
+  return raw;
+};
+
 // --- ECharts 实例 ---
 let pieChart = null;
 let lineChart = null;
 let barChart = null;
+
+const buildTrendFallback = () => {
+  const labels = [];
+  for (let i = 6; i >= 0; i--) {
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+    labels.push(`${date.getMonth() + 1}/${date.getDate()}`);
+  }
+  return {
+    labels,
+    total: new Array(7).fill(0),
+    processed: new Array(7).fill(0)
+  };
+};
+
+const initLineChart = () => {
+  if (!lineChartRef.value) return;
+  if (lineChart && !lineChart.isDisposed()) {
+    lineChart.dispose();
+  }
+  lineChart = echarts.init(lineChartRef.value);
+  lineChart.setOption({
+    tooltip: { trigger: 'axis' },
+    grid: { top: '15%', left: '3%', right: '4%', bottom: '3%', containLabel: true },
+    xAxis: {
+      type: 'category',
+      boundaryGap: false,
+      data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+      axisLine: { lineStyle: { color: '#4b5563' } },
+      axisLabel: { color: '#9ca3af' }
+    },
+    yAxis: {
+      type: 'value',
+      splitLine: { lineStyle: { color: '#1f2937', type: 'dashed' } },
+      axisLabel: { color: '#9ca3af' }
+    },
+    series: [
+      {
+        name: '违规总数',
+        type: 'line',
+        smooth: true,
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: 'rgba(59, 130, 246, 0.5)' },
+            { offset: 1, color: 'rgba(59, 130, 246, 0.01)' }
+          ])
+        },
+        itemStyle: { color: '#3b82f6' },
+        data: [120, 132, 101, 134, 90, 230, 210]
+      },
+      {
+        name: '已处理',
+        type: 'line',
+        smooth: true,
+        itemStyle: { color: '#10b981' },
+        data: [110, 120, 95, 120, 85, 220, 200]
+      }
+    ]
+  });
+};
 
 // --- 初始化图表 ---
 const initCharts = () => {
@@ -312,47 +407,7 @@ const initCharts = () => {
   }
 
   // 2. 折线图 - 7日趋势
-  if (lineChartRef.value) {
-    lineChart = echarts.init(lineChartRef.value);
-    lineChart.setOption({
-      tooltip: { trigger: 'axis' },
-      grid: { top: '15%', left: '3%', right: '4%', bottom: '3%', containLabel: true },
-      xAxis: {
-        type: 'category',
-        boundaryGap: false,
-        data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
-        axisLine: { lineStyle: { color: '#4b5563' } },
-        axisLabel: { color: '#9ca3af' }
-      },
-      yAxis: {
-        type: 'value',
-        splitLine: { lineStyle: { color: '#1f2937', type: 'dashed' } },
-        axisLabel: { color: '#9ca3af' }
-      },
-      series: [
-        {
-          name: '违规总数',
-          type: 'line',
-          smooth: true,
-          areaStyle: {
-            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: 'rgba(59, 130, 246, 0.5)' },
-              { offset: 1, color: 'rgba(59, 130, 246, 0.01)' }
-            ])
-          },
-          itemStyle: { color: '#3b82f6' },
-          data: [120, 132, 101, 134, 90, 230, 210]
-        },
-        {
-          name: '已处理',
-          type: 'line',
-          smooth: true,
-          itemStyle: { color: '#10b981' },
-          data: [110, 120, 95, 120, 85, 220, 200]
-        }
-      ]
-    });
-  }
+  initLineChart();
 
   // 3. 柱状图 - 区域排行
   if (barChartRef.value) {
@@ -405,10 +460,19 @@ const initCharts = () => {
         borderColor: '#0ea5e9',
         textStyle: { color: '#fff' },
         formatter: (params) => {
+          // 简单的 HTML 实体转义防止 XSS
+          const escapeHtml = (unsafe) => {
+            return (unsafe || '').toString()
+              .replace(/&/g, "&amp;")
+              .replace(/</g, "&lt;")
+              .replace(/>/g, "&gt;")
+              .replace(/"/g, "&quot;")
+              .replace(/'/g, "&#039;");
+          };
           if (params.seriesType === 'effectScatter') {
-             return `${params.marker} ${params.name}<br/>坐标: ${params.value[0].toFixed(3)}, ${params.value[1].toFixed(3)}`;
+             return `${params.marker} ${escapeHtml(params.name)}<br/>坐标: ${params.value[0].toFixed(3)}, ${params.value[1].toFixed(3)}`;
           }
-          return params.name;
+          return escapeHtml(params.name);
         }
       },
       geo: {
@@ -489,22 +553,27 @@ const updateChartsData = () => {
     const xAxisData = trendData.map(item => item.date || item.day || item.name || '');
     const totalSeries = trendData.map(item => item.count ?? item.total ?? 0);
     const handledSeries = trendData.map(item => item.processed ?? item.handled ?? 0);
+    const fallback = buildTrendFallback();
 
     lineChart.setOption({
       xAxis: {
-        data: xAxisData.length ? xAxisData : ['暂无数据']
+        data: xAxisData.length ? xAxisData : fallback.labels
       },
       series: [
         {
           name: '违规总数',
-          data: totalSeries.length ? totalSeries : [0]
+          data: totalSeries.length ? totalSeries : fallback.total
         },
         {
           name: '已处理',
-          data: handledSeries.length ? handledSeries : [0]
+          data: handledSeries.length ? handledSeries : fallback.processed
         }
       ]
     });
+    lineChart.resize();
+  } else if (lineChartRef.value) {
+    initLineChart();
+    updateChartsData();
   }
 
   if (barChart) {
@@ -593,11 +662,17 @@ onMounted(async () => {
   timer = setInterval(updateTime, 1000);
 
   nextTick(() => {
-    initCharts();
-    fetchScreenStats();
-    updateChartsData();
     handleResize();
     window.addEventListener('resize', handleResize);
+
+    try {
+      initCharts();
+      updateChartsData();
+    } catch (error) {
+      console.error('大屏图表初始化失败:', error);
+    }
+
+    fetchScreenStats();
   });
   
   // 每30秒刷新一次大屏数据
@@ -820,11 +895,16 @@ onUnmounted(() => {
   border: 1px solid rgba(56, 189, 248, 0.2);
   border-radius: 4px;
   flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   position: relative;
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
   backdrop-filter: blur(4px);
+}
+
+.left-column .data-card {
+  min-height: 0;
 }
 
 /* Card Decorations (Corners) */
@@ -1006,6 +1086,7 @@ onUnmounted(() => {
 
 .status.pending { color: #f59e0b; }
 .status.processing { color: #3b82f6; }
+.status.processed { color: #10b981; }
 .status.completed { color: #10b981; }
 
 </style>

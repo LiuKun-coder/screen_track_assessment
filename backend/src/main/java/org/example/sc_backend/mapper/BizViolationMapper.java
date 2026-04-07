@@ -34,8 +34,25 @@ public interface BizViolationMapper extends BaseMapper<BizViolation> {
     /**
      * 最近7天每日违规趋势
      */
-    @Select("SELECT DATE(create_time) as date, COUNT(*) as count FROM biz_violation " +
+        @Select("SELECT DATE(create_time) as date, COUNT(*) as count, " +
+            "SUM(CASE WHEN status = 'processed' THEN 1 ELSE 0 END) as processed " +
+            "FROM biz_violation " +
             "WHERE create_time >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND deleted = 0 " +
             "GROUP BY DATE(create_time) ORDER BY date")
     List<Map<String, Object>> dailyTrend();
+
+        /**
+         * 区域违规排行
+         */
+        @Select("SELECT place as area, COUNT(*) as count FROM biz_violation " +
+            "WHERE deleted = 0 AND place IS NOT NULL AND place <> '' " +
+            "GROUP BY place ORDER BY count DESC LIMIT 8")
+        List<Map<String, Object>> areaRanking();
+
+        /**
+         * 最近违规列表
+         */
+        @Select("SELECT id, DATE_FORMAT(violation_time, '%Y-%m-%d %H:%i:%s') as time, type, place as location, status " +
+            "FROM biz_violation WHERE deleted = 0 ORDER BY violation_time DESC LIMIT #{limit}")
+        List<Map<String, Object>> recentViolations(@Param("limit") Integer limit);
 }

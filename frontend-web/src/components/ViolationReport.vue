@@ -5,7 +5,15 @@
         <div style="position:relative;">
           <button class="report-filter-btn" @click="toggleReportTypeFilter">按违规方式筛选</button>
           <div v-if="showReportTypeFilter" class="report-dropdown">
-            <div v-for="type in reportTypeOptions" :key="type" class="report-dropdown-item" :class="{ active: reportFilterType === type }" @click="setReportType(type); showReportTypeFilter=false">{{ type }}</div>
+            <div
+              v-for="type in reportTypeOptions"
+              :key="type.value"
+              class="report-dropdown-item"
+              :class="{ active: reportFilterType === type.value }"
+              @click="setReportType(type); showReportTypeFilter=false"
+            >
+              {{ type.label }}
+            </div>
           </div>
         </div>
         <div style="position:relative;">
@@ -34,7 +42,7 @@
         <div class="report-info">
           <div class="report-meta">
             <span class="report-name">{{ item.name }}</span>
-            <span class="report-type">{{ item.type }}</span>
+            <span class="report-type">{{ item.typeName }}</span>
           </div>
           <div class="report-detail">
             <span class="report-time">{{ item.time }}</span>
@@ -63,15 +71,37 @@ const total = ref(0)
 
 const reportPageSize = 5
 const reportCurrentPage = ref(1)
-const reportFilterType = ref('全部')
+const reportFilterType = ref('')
 const reportFilterPlace = ref('全部')
 const reportFilterTime = ref('')
-const reportTypeOptions = ['全部', '超速', '违停', '逆行', '闯红灯']
+const reportTypeOptions = [
+  { label: '全部', value: '' },
+  { label: '超速', value: 'speeding' },
+  { label: '违停', value: 'illegal_parking' },
+  { label: '逆行', value: 'wrong_way' },
+  { label: '闯红灯', value: 'red_light' }
+]
 const reportPlaceOptions = ['全部', '东门', '西门', '南门', '北门']
 
 const showReportTypeFilter = ref(false)
 const showReportPlaceFilter = ref(false)
 const showReportTimeFilter = ref(false)
+
+const typeLabelMap = {
+  speeding: '超速',
+  illegal_parking: '违停',
+  wrong_way: '逆行',
+  red_light: '闯红灯',
+  parking: '违停',
+  'Speeding': '超速',
+  'Illegal Parking': '违停',
+  'Wrong Way': '逆行',
+  'Red Light': '闯红灯'
+}
+
+function getTypeLabel(type) {
+  return typeLabelMap[type] || type || '未知类型'
+}
 
 // 从后端获取数据
 async function fetchViolationList() {
@@ -83,7 +113,7 @@ async function fetchViolationList() {
     }
     
     // 添加筛选条件
-    if (reportFilterType.value !== '全部') {
+    if (reportFilterType.value) {
       params.type = reportFilterType.value
     }
     if (reportFilterTime.value.trim()) {
@@ -100,6 +130,7 @@ async function fetchViolationList() {
       time: item.violationTime ? item.violationTime.replace('T', ' ').substring(0, 16) : '',
       place: item.place,
       type: item.type,
+      typeName: getTypeLabel(item.type),
       phone: item.phone || '***',
       // 保留原始数据
       ...item
@@ -144,8 +175,8 @@ function reportNextPage() {
   }
 }
 
-function setReportType(type) {
-  reportFilterType.value = type
+function setReportType(typeOption) {
+  reportFilterType.value = typeOption.value
   reportCurrentPage.value = 1
   fetchViolationList()
 }
